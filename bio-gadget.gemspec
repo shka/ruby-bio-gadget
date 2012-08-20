@@ -4,9 +4,9 @@ require File.expand_path('../lib/bio-gadget/version', __FILE__)
 Gem::Specification.new do |gem|
   gem.authors       = ["Shintaro Katayama"]
   gem.email         = ["shintaro.katayama@gmail.com"]
-  gem.description   = %q{TODO: Write a gem description}
-  gem.summary       = %q{TODO: Write a gem summary}
-  gem.homepage      = ""
+  gem.description   = %q{Gadgets for bioinformatics}
+  gem.summary       = gem.description
+  gem.homepage      = "https://github.com/shka/ruby-bio-gadget"
 
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
@@ -14,4 +14,6 @@ Gem::Specification.new do |gem|
   gem.name          = "bio-gadget"
   gem.require_paths = ["lib"]
   gem.version       = Bio::Gadget::VERSION
+
+  gem.add_dependency 'gthor'
 end
