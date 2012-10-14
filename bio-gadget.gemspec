@@ -16,4 +16,5 @@ Gem::Specification.new do |gem|
   gem.version       = Bio::Gadget::VERSION
 
   gem.add_dependency 'gthor'
+  gem.add_dependency 'parallel'
 end

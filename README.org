@@ -8,8 +8,17 @@
 
 * Usage
 
+To check all commands in this package,
+
 : gthor help bio
 : gthor list bio
+
+Currently available commands are
+
+: bio
+: ---
+: gthor bio:fqlzma       # automatic (re)compression of *.fq(.gz|.bz2) files
+: gthor bio:qvstat QUAL  # statistics of quality values in *.qual file
 
 * Contributing
 

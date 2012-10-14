@@ -1,7 +1,3 @@
-require "bio-gadget/version"
-
-module Bio
-  module Gadget
-    # Your code goes here...
-  end
-end
+require 'bio-gadget/version'
+require 'bio-gadget/fqlzma'
+require 'bio-gadget/qvstat'
