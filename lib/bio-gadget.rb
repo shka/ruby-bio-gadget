@@ -1,4 +1,5 @@
 require 'bio-gadget/version'
+require 'bio-gadget/demlt'
 require 'bio-gadget/fqlzma'
 require 'bio-gadget/qvstat'
 require 'bio-gadget/wigchr'

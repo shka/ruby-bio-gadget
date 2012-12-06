@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 require File.expand_path('../lib/bio-gadget/version', __FILE__)
 
 Gem::Specification.new do |gem|
@@ -17,4 +16,6 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency 'gthor'
   gem.add_dependency 'parallel'
+  gem.add_dependency 'levenshtein-ffi'
+  gem.add_dependency 'bio-faster'
 end
