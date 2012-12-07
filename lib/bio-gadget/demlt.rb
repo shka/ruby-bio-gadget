@@ -1,5 +1,6 @@
 require 'bio-faster'
 require 'levenshtein'
+require 'parallel'
 require 'thread'
 
 module Bio
@@ -7,6 +8,7 @@ module Bio
     namespace :bio
 
     desc 'demlt BC POS', 'demultiplex fastq (via STDIN) by barcodes'
+    option :destdir, :type => :string, :default  => '.'
     def demlt(bcfile, tmpofs)
 
       ofs = tmpofs.to_i
@@ -30,14 +32,18 @@ module Bio
       ts = Array.new
       qs = Array.new
       (wells + ['other']).each { |well|
-        q = Queue.new
-        t = Thread.new(well, q) do |well|
-          fp = open("| gzip -c > #{well}.fq.gz", 'w')
+        q = SizedQueue.new(100000)
+        t = Thread.new(well, q) do |well, q|
+          tc = Thread.current
+          tc[:file] = "#{options[:destdir]}/#{well}.fq.gz"
+          fp = open("| gzip -c > #{tc[:file]}", 'w')
+          tc[:read] = 0
           while vals = q.shift
             if vals == ""
               break
             else
               fp.puts(vals)
+              tc[:read] = tc[:read] + 1
             end
           end
           fp.close()
@@ -46,22 +52,16 @@ module Bio
         ts.push(t)
       }
 
-      reads = Array.new(bcs.size+1, 0)
-      tmpdist = Hash.new
+      seqs = Array.new
       Bio::Faster.new(:stdin).each_record(:quality => :raw) do |seqid, seq, qvs|
-        seqbc = seq[ofs, bclen]
-        bcs.each_index do |i|
-          tmpdist[i] = Levenshtein.distance(bcs[i], seqbc)
+        seqs.push([seqid, seq, qvs])
+        if seqs.size == 100000 * Parallel.processor_count
+          parallel_Levenshtein(seqs, bcs, ofs, bclen, qs)
+          seqs = Array.new
         end
-        dists = tmpdist.sort { |a, b| a[1] <=> b[1] }
-        if dists[0][1] < dists[1][1] && dists[0][1] < 2
-          idx = dists[0][0]
-          qs[idx].push(">#{seqid}\n#{seq}\n+\n#{qvs}")
-          reads[idx] = reads[idx]+1
-        else
-          qs[-1].push(">#{seqid}\n#{seq}\n+\n#{qvs}")
-          reads[-1] = reads[-1]+1
-        end
+      end
+      if seqs.size > 0
+        parallel_Levenshtein(seqs, bcs, ofs, bclen, qs)
       end
 
       qs.each { |q| q.push('') }
@@ -69,14 +69,48 @@ module Bio
 
       total = 0
       bcs.each_index { |i|
-        r = reads[i]
-        puts "#{bcs[i]}\t#{r}\t#{wells[i]}.fq.gz"
+        t = ts[i]
+        r = t[:read]
+        puts "#{bcs[i]}\t#{r}\t#{t[:file]}"
         total = total+r
       }
-      puts "Other\t#{reads[-1]}\tother.fq.gz"
+      t = ts[-1]
+      r = t[:read]
+      puts "Other\t#{r}\t#{t[:file]}"
       puts '===='
-      puts "Total\t#{total+reads[-1]}"
+      puts "Total\t#{total+r}"
 
     end
+
+    protected
+
+    def parallel_Levenshtein(seqs, bcs, ofs, bclen, qs)
+
+      tmpdists = Parallel.map_with_index(bcs, :in_processes => Parallel.processor_count) do |bc, bcidx|
+        tmpdist = Array.new
+        seqs.each_index do |seqidx|
+          seqbc = seqs[seqidx][1][ofs, bclen]
+          tmpdist.push(Levenshtein.distance(bc, seqbc))
+        end
+        tmpdist
+      end
+
+      tmpdist = Hash.new
+      seqs.each_index do |seqidx|
+        seqid, seq, qvs = seqs[seqidx]
+        bcs.each_index do |bcidx|
+          tmpdist[bcidx] = tmpdists[bcidx][seqidx]
+        end
+        dists = tmpdist.sort { |a, b| a[1] <=> b[1] }
+        if dists[0][1] < dists[1][1] && dists[0][1] < 2
+          idx = dists[0][0]
+          qs[idx].push(">#{seqid}\n#{seq}\n+\n#{qvs}")
+        else
+          qs[-1].push(">#{seqid}\n#{seq}\n+\n#{qvs}")
+        end
+      end
+
+    end
+
   end
 end
