@@ -8,7 +8,7 @@ module Bio
     namespace :bio
 
     desc 'demlt BC POS', 'demultiplex fastq (via STDIN) by barcodes'
-    option :destdir, :type => :string, :default  => '.'
+    option 'output-dir', :type => :string, :default  => '.', :aliases => '-o'
     def demlt(bcfile, tmpofs)
 
       ofs = tmpofs.to_i
@@ -35,8 +35,8 @@ module Bio
         q = SizedQueue.new(100000)
         t = Thread.new(well, q) do |well, q|
           tc = Thread.current
-          tc[:file] = "#{options[:destdir]}/#{well}.fq.gz"
-          fp = open("| gzip -c > #{tc[:file]}", 'w')
+          tc[:file] = "#{options['output-dir']}/#{well}.fq.xz"
+          fp = open("| xz -z -c -e > #{tc[:file]}", 'w')
           tc[:read] = 0
           while vals = q.shift
             if vals == ""
@@ -52,19 +52,28 @@ module Bio
         ts.push(t)
       }
 
+      rq = Queue.new
+      Thread.new(rq) {
+        Bio::Faster.new(:stdin).each_record(:quality => :raw) do |seqid, seq, qvs|
+          rq.push([seqid, seq, qvs])
+        end
+        rq.push('')
+      }
+
       seqs = Array.new
-      Bio::Faster.new(:stdin).each_record(:quality => :raw) do |seqid, seq, qvs|
-        seqs.push([seqid, seq, qvs])
-        if seqs.size == 100000 * Parallel.processor_count
+      while vals = rq.shift
+        if vals != ""
+          seqs.push(vals)
+        end
+        if vals == "" || seqs.size == 100000 * Parallel.processor_count
           parallel_Levenshtein(seqs, bcs, ofs, bclen, qs)
           seqs = Array.new
         end
+        if vals == ""
+          qs.each { |q| q.push('') }
+          break
+        end
       end
-      if seqs.size > 0
-        parallel_Levenshtein(seqs, bcs, ofs, bclen, qs)
-      end
-
-      qs.each { |q| q.push('') }
       ts.each { |t| t.join }
 
       total = 0
@@ -104,9 +113,9 @@ module Bio
         dists = tmpdist.sort { |a, b| a[1] <=> b[1] }
         if dists[0][1] < dists[1][1] && dists[0][1] < 2
           idx = dists[0][0]
-          qs[idx].push(">#{seqid}\n#{seq}\n+\n#{qvs}")
+          qs[idx].push("@#{seqid}\n#{seq}\n+\n#{qvs}")
         else
-          qs[-1].push(">#{seqid}\n#{seq}\n+\n#{qvs}")
+          qs[-1].push("@#{seqid}\n#{seq}\n+\n#{qvs}")
         end
       end
 

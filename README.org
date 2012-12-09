@@ -17,8 +17,9 @@ Currently available commands are
 
 : bio
 : ---
+: gthor bio:dedup          # deduplicate fastq (via STDIN)
 : gthor bio:demlt BC POS   # demultiplex fastq (via STDIN) by barcodes
-: gthor bio:fqlzma         # automatic (re)compression of *.fq(.gz|.bz2) files
+: gthor bio:fqxz           # automatic (re)compression of *.fq(.gz|.bz2) files
 : gthor bio:qvstat QUAL    # statistics of quality values in *.qual file
 : gthor bio:wigchr WIG CHR # extract wiggle track on specified chromosome
 

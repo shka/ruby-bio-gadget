@@ -6,11 +6,11 @@ module Bio
 
     namespace :bio
 
-    desc 'fqlzma', 'automatic (re)compression of *.fq(.gz|.bz2) files'
-    def fqlzma
+    desc 'fqxz', 'automatic (re)compression of *.fq(.gz|.bz2) files'
+    def fqxz
       Parallel.map(Pathname.glob('*.fq{.gz,.bz2,}')) { |fqfilename|
-        lzmafilename = fqfilename.sub(/\.fq(\.(gz|bz2))*$/, '.fq.lzma')
-        if !lzmafilename.exist?
+        xzfilename = fqfilename.sub(/\.fq(\.(gz|bz2))*$/, '.fq.xz')
+        if !xzfilename.exist?
           case fqfilename.extname
           when '.gz'
             decompressor = 'gunzip -c'
@@ -19,9 +19,9 @@ module Bio
           else
             decompressor = 'cat'
           end
-          puts "compressing #{lzmafilename}..."
-          system "#{decompressor} #{fqfilename} | lzma -c > #{lzmafilename} 2> #{lzmafilename}.log"
-          system "lzma -t #{lzmafilename} >> #{lzmafilename}.log 2>&1"
+          puts "compressing #{xzfilename}..."
+          system "#{decompressor} #{fqfilename} | xz -z -e -c > #{xzfilename} 2> #{xzfilename}.log"
+          system "xz -t #{xzfilename} >> #{xzfilename}.log 2>&1"
         end
       }
     end
