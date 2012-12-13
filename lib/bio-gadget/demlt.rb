@@ -32,7 +32,7 @@ module Bio
       ts = Array.new
       qs = Array.new
       (wells + ['other']).each { |well|
-        q = SizedQueue.new(100000)
+        q = SizedQueue.new(1000)
         t = Thread.new(well, q) do |well, q|
           tc = Thread.current
           tc[:file] = "#{options['output-dir']}/#{well}.fq.xz"
@@ -52,7 +52,7 @@ module Bio
         ts.push(t)
       }
 
-      rq = Queue.new
+      rq = SizedQueue.new(1000)
       Thread.new(rq) {
         Bio::Faster.new(:stdin).each_record(:quality => :raw) do |seqid, seq, qvs|
           rq.push([seqid, seq, qvs])
@@ -65,7 +65,7 @@ module Bio
         if vals != ""
           seqs.push(vals)
         end
-        if vals == "" || seqs.size == 100000 * Parallel.processor_count
+        if vals == "" || seqs.size == 10000 * Parallel.processor_count
           parallel_Levenshtein(seqs, bcs, ofs, bclen, qs)
           seqs = Array.new
         end
