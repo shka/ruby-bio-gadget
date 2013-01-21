@@ -32,7 +32,7 @@ module Bio
       ts = Array.new
       qs = Array.new
       (wells + ['other']).each { |well|
-        q = SizedQueue.new(1000)
+        q = Queue.new
         t = Thread.new(well, q) do |well, q|
           tc = Thread.current
           tc[:file] = "#{options['output-dir']}/#{well}.fq.xz"
@@ -52,28 +52,21 @@ module Bio
         ts.push(t)
       }
 
-      rq = SizedQueue.new(1000)
-      Thread.new(rq) {
-        Bio::Faster.new(:stdin).each_record(:quality => :raw) do |seqid, seq, qvs|
-          rq.push([seqid, seq, qvs])
+      Bio::Faster.new(:stdin).each_record(:quality => :raw) do |seqid, seq, qvs|
+        tmpdists = Hash.new
+        bcs.each_index { |bcidx|
+          tmpdists[bcidx] = Levenshtein.distance(bcs[bcidx], seq[ofs, bclen])
+        }
+        dists = tmpdists.sort { |a, b| a[1] <=> b[1] }
+        if dists[0][1] < 2 && dists[0][1] < dists[1][1]
+          qs[dists[0][0]].push("@#{seqid}\n#{seq}\n+\n#{qvs}")
+        else
+          qs[-1].push("@#{seqid}\n#{seq}\n+\n#{qvs}")
         end
-        rq.push('')
-      }
-
-      seqs = Array.new
-      while vals = rq.shift
-        if vals != ""
-          seqs.push(vals)
-        end
-        if vals == "" || seqs.size == 10000 * Parallel.processor_count
-          parallel_Levenshtein(seqs, bcs, ofs, bclen, qs)
-          seqs = Array.new
-        end
-        if vals == ""
-          qs.each { |q| q.push('') }
-          break
-        end
+        Thread.pass
       end
+
+      qs.each { |q| q.push('') }
       ts.each { |t| t.join }
 
       total = 0
@@ -88,36 +81,6 @@ module Bio
       puts "Other\t#{r}\t#{t[:file]}"
       puts '===='
       puts "Total\t#{total+r}"
-
-    end
-
-    protected
-
-    def parallel_Levenshtein(seqs, bcs, ofs, bclen, qs)
-
-      tmpdists = Parallel.map_with_index(bcs, :in_processes => Parallel.processor_count) do |bc, bcidx|
-        tmpdist = Array.new
-        seqs.each_index do |seqidx|
-          seqbc = seqs[seqidx][1][ofs, bclen]
-          tmpdist.push(Levenshtein.distance(bc, seqbc))
-        end
-        tmpdist
-      end
-
-      tmpdist = Hash.new
-      seqs.each_index do |seqidx|
-        seqid, seq, qvs = seqs[seqidx]
-        bcs.each_index do |bcidx|
-          tmpdist[bcidx] = tmpdists[bcidx][seqidx]
-        end
-        dists = tmpdist.sort { |a, b| a[1] <=> b[1] }
-        if dists[0][1] < dists[1][1] && dists[0][1] < 2
-          idx = dists[0][0]
-          qs[idx].push("@#{seqid}\n#{seq}\n+\n#{qvs}")
-        else
-          qs[-1].push("@#{seqid}\n#{seq}\n+\n#{qvs}")
-        end
-      end
 
     end
 
