@@ -144,7 +144,7 @@ module Bio
 | ruby -F'\\t' -anle 'puts(["@"+$F[0], $F[2][#{left}..-1], "+", $F[1][#{left}..-1]].join("\\n"))' \\
 DEDUPandFORMAT
           : <<"FORMAT"
-| ruby -F'\\t' -anle 'puts(["@"+$F[0], $F[1][#{left}..-1], "+", $F[2][#{left}..-1].rstrip].join("\\n"))' \\
+| ruby -F'\\t' -anle 'puts(["@"+$F[0], $F[1][#{left}..#{right}], "+", $F[2][#{left}..#{right}].rstrip].join("\\n"))' \\
 FORMAT
           preprocess += "| xz -z -c -e > #{outpath}"
           open(preprocess, 'w') { |fp|
