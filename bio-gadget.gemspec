@@ -18,4 +18,5 @@ Gem::Specification.new do |gem|
   gem.add_dependency 'parallel'
   gem.add_dependency 'levenshtein-ffi'
   gem.add_dependency 'bio-faster'
+  gem.add_dependency 'mkfifo'
 end
