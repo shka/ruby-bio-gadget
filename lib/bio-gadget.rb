@@ -24,12 +24,18 @@ module Bio
       end
     end
 
-    def mytempfile(basename, tmpdir = Dir::tmpdir)
+    @@mytemppaths = Array.new
+
+    def mytemppath(basename, tmpdir = Dir::tmpdir)
       fp = Tempfile.open(basename, tmpdir)
       path = fp.path
-      fp.close #!
+      @@mytemppaths.push(path)
+      fp.close!
       path
     end
 
+    END {
+      @@mytemppaths.each { |path| File.unlink(path) if File.exist?(path) }
+    }
   end
 end
