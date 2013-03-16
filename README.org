@@ -10,18 +10,18 @@
 
 To check all commands in this package,
 
-: gthor help bio
-: gthor list bio
+: bio-gadget help
+: bio-gadget list
 
 Currently available commands are
 
 : bio
 : ---
-: gthor bio:dedup          # deduplicate fastq (via STDIN)
-: gthor bio:demlt BC POS   # demultiplex fastq (via STDIN) by barcodes
-: gthor bio:fqxz           # automatic (re)compression of *.fq(.gz|.bz2) files
-: gthor bio:qvstat QUAL    # statistics of quality values in *.qual file
-: gthor bio:wigchr WIG CHR # extract wiggle track on specified chromosome
+: bio-gadget dedup                                # deduplicate fastq (via STDIN)
+: bio-gadget demlt -b,--barcode-file=BARCODE-FILE # demultiplex fastq by barcodes
+: bio-gadget fqxz                                 # automatic (re)compression of *.fq(.gz|.bz2) files
+: bio-gadget qvstat QUAL                          # statistics of quality values in *.qual file
+: bio-gadget wigchr WIG CHR                       # extract wiggle track on specified chromosome
 
 * Contributing
 

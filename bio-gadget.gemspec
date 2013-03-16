@@ -14,7 +14,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.version       = Bio::Gadget::VERSION
 
-  gem.add_dependency 'gthor'
+  gem.add_dependency 'thor'
   gem.add_dependency 'parallel'
   gem.add_dependency 'levenshtein-ffi'
   gem.add_dependency 'bio-faster'

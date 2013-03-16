@@ -5,14 +5,19 @@ require 'parallel'
 
 module Bio
   class Gadget < Thor
+
     namespace :bio
 
-    desc 'demlt BC POS LEN', 'demultiplex fastq (via STDIN) by barcodes'
-    option 'output-dir', :aliases => '-o', :type => :string, :default  => '.'
-    def demlt(bcfile, tmpofs, tmplen)
+    desc 'demlt', 'demultiplex fastq from STDIN by barcodes'
+    option 'barcode-file', :aliases => '-b', :type => :string, :required => true
+    option 'output-dir', :aliases => '-o', :type => :string, :default => '.'
+    option 'umi-length', :aliases => '-u', :type => :numeric, :default => 4
+    option 'cdna-length', :aliases => '-c', :type => :numeric, :default => 37
+    def demlt
 
-      ofs = tmpofs.to_i
-      len = tmplen.to_i
+      bcfile = options['barcode-file']
+      ofs = options['umi-length']
+      len = options['cdna-length']
 
       wells = Array.new
       bcs = Array.new
