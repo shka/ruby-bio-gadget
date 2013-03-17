@@ -2,6 +2,7 @@ require 'bio-gadget/version'
 require 'bio-gadget/dedup'
 require 'bio-gadget/demlt'
 require 'bio-gadget/fqxz'
+require 'bio-gadget/gtfann'
 require 'bio-gadget/qvstat'
 require 'bio-gadget/wigchr'
 

@@ -15,13 +15,13 @@ To check all commands in this package,
 
 Currently available commands are
 
-: bio
-: ---
-: bio-gadget dedup                                # deduplicate fastq (via STDIN)
-: bio-gadget demlt -b,--barcode-file=BARCODE-FILE # demultiplex fastq by barcodes
-: bio-gadget fqxz                                 # automatic (re)compression of *.fq(.gz|.bz2) files
-: bio-gadget qvstat QUAL                          # statistics of quality values in *.qual file
-: bio-gadget wigchr WIG CHR                       # extract wiggle track on specified chromosome
+: bio-gadget dedup                                 # deduplicate fastq (via STDIN)
+: bio-gadget demlt BARCODE [FASTQ]                 # demultiplex fastq by barcodes
+: bio-gadget ensann GENENAMEGZ [ENSGENE]           # create ensGene.gtf
+: bio-gadget fqxz                                  # automatic (re)compression of *.fq(.gz|.bz2) files
+: bio-gadget qvstat QUAL                           # statistics of quality values in *.qual file
+: bio-gadget ucscann ISOFORMSGZ XREFGZ [KNOWNGENE] # create knownGene.gtf
+: bio-gadget wigchr WIG CHR                        # extract wiggle track on specified chromosome
 
 * Contributing
 

@@ -8,14 +8,12 @@ module Bio
 
     namespace :bio
 
-    desc 'demlt', 'demultiplex fastq from STDIN by barcodes'
-    option 'barcode-file', :aliases => '-b', :type => :string, :required => true
+    desc 'demlt BARCODE [FASTQ]', 'demultiplex fastq from STDIN by barcodes'
     option 'output-dir', :aliases => '-o', :type => :string, :default => '.'
     option 'umi-length', :aliases => '-u', :type => :numeric, :default => 4
     option 'cdna-length', :aliases => '-c', :type => :numeric, :default => 37
-    def demlt
+    def demlt(bcfile, fastq=:stdin)
 
-      bcfile = options['barcode-file']
       ofs = options['umi-length']
       len = options['cdna-length']
 
@@ -47,7 +45,7 @@ module Bio
         fifo1s = Array.new
         fifo1paths.each { |fifo1path| fifo1s.push(open(fifo1path, 'w')) }
         total = 0
-        Bio::Faster.new(:stdin).each_record(:quality => :raw) do |vals|
+        Bio::Faster.new(fastq).each_record(:quality => :raw) do |vals|
           fifo1 = fifo1s[total % procs]
           fifo1.puts(vals.join("\t"))
           total += 1
