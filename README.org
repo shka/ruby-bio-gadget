@@ -8,20 +8,23 @@
 
 * Usage
 
-To check all commands in this package,
+To check all commands and the usages in this package
 
 : bio-gadget help
-: bio-gadget list
 
 Currently available commands are
 
-: bio-gadget dedup                                 # deduplicate fastq (via STDIN)
-: bio-gadget demlt BARCODE [FASTQ]                 # demultiplex fastq by barcodes
-: bio-gadget ensann GENENAMEGZ [ENSGENE]           # create ensGene.gtf
-: bio-gadget fqxz                                  # automatic (re)compression of *.fq(.gz|.bz2) files
-: bio-gadget qvstat QUAL                           # statistics of quality values in *.qual file
-: bio-gadget ucscann ISOFORMSGZ XREFGZ [KNOWNGENE] # create knownGene.gtf
-: bio-gadget wigchr WIG CHR                        # extract wiggle track on specified chromosome
+- dedup :: Deduplicate fastq (via STDIN)
+- demlt :: Demultiplex fastq by barcodes
+- fqxz :: automatic (re)compression of *.fq(.gz|.bz2) files
+- qvstat :: Statistics of quality values in *.qual file
+- rgt2mtx :: Convert cuffdiff read group tracking file into tab-separated matrix
+- wig5p :: Convert bam-format alignments into wig-format table
+- wigchr :: Extract wiggle track on specified chromosome
+
+** Memo                                                            :noexport:
+- gtfensembl :: Create gtf of ENSEMBL Genes (a.k.a. ensGene.gtf) from XX files of UCSC annotation database; .txt.gz of 
+- gtfucsc :: Create gtf of UCSC Genes from four (knownIsoforms.txt.gz, kgXref.txt.gz, kgTxInfo.txt.gz and knownGene.txt.gz) files of UCSC annotation database. The output gtf contains gene_id, transcript_id and gene_name attributes, so it convenients to use as a gene/transcript annotation file for tophat/cufflinks etc.
 
 * Contributing
 
