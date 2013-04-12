@@ -8,16 +8,20 @@ module Bio
 
     namespace :bio
 
-    desc 'demlt BARCODE [FASTQ]', 'Demultiplex fastq from STDIN by barcodes. '
+    desc 'demlt BARCODE [FASTQ]', "Demultiplex fastq from STDIN by barcodes.\n\n"
     option 'output-dir', :aliases => '-o', :type => :string, :default => '.'
-    option 'umi-length', :aliases => '-u', :type => :numeric, :default => 4, :desc => '0 is no umi, means no PCR-amplicon removal.'
-    option 'cdna-length', :aliases => '-c', :type => :numeric, :default => 37, :desc => '-1 is no trimming by length.'
-    option 'g-trimming', :aliases => '-g', :type => :boolean, :default => false, :desc => "Trimming of 5'-end poly-G. Length of the trimmed Gs attached after the read name. This sets cdna-length option to -1."
+    option 'umi-length', :aliases => '-u', :type => :numeric, :default => 4, :desc => '0 is no umi, means no PCR-amplicon reduction.'
+    option 'cdna-length', :aliases => '-c', :type => :numeric, :default => 37, :desc => 'Trimming length before PCA-amplicon reduction. -1 is no trimming by length.'
+    option 'g-trimming', :aliases => '-g', :type => :boolean, :default => false, :desc => "Trimming of 5'-end poly-G. Length of the trimmed Gs attached after the read name."
+    option 'q-trimming', :aliases => '-q', :type => :string, :default => '~', :desc => "Quality threshold - nucleotides with lower quality will be trimmed, from the end of the sequence. '~' is no trimming by quality, because this is the maximum quality base character."
+    option 'min-length', :aliases => '-l', :type => :numeric, :default => 0, :desc => 'Length threshold - sequences shorter than this after trimming will be filtered out. 0 is no filtering.'
     def demlt(bcfile, fastq=:stdin)
 
       ofs = options['umi-length']
-      trim = options['g-trimming']
-      len = trim ? -1 : options['cdna-length']
+      clen = options['cdna-length']
+      gtrim = options['g-trimming']
+      qtrim = options['q-trimming']
+      mlen = options['min-length']
 
       wells = Array.new
       bcs = Array.new
@@ -117,7 +121,7 @@ module Bio
         outpath = "#{options['output-dir']}/#{well}.fq.xz"
         pid = Kernel.fork {
           left = ofs+bclen
-          right = trim ? -1 : ofs+bclen+len-1
+          right = clen > -1 ? -1 : ofs+bclen+clen-1
           preprocess = ofs > 0 ? <<"DEDUPandFORMAT"
 ruby -F'\\t' -anle 'f1=$F[1][0..#{right}];f2=$F[2][0..#{right}];puts([f1+f2, $F[0], f2, f1].join("\\t"))' #{fifo3paths[i]} \\
 | sort -k 1 -r | cut -f 2- | uniq -f 2 \\
@@ -127,8 +131,13 @@ DEDUPandFORMAT
 ruby -F'\\t' -anle 'puts(["@"+$F[0], $F[1][#{left}..#{right}], "+", $F[2][#{left}..#{right}].rstrip].join("\\n"))' #{fifo3paths[i]} \\
 FORMAT
 
-          preprocess += '| ruby -e \'require "bio-faster";Bio::Faster.new(:stdin).each_record(:quality=>:raw){|v|s=v[1].gsub(/^G+/,"");l=v[1].length-s.length;puts("@#{v[0]}|-G#{l}\\n#{s}\\n+\\n#{v[2][l,s.length]}")}\'' if trim
+          preprocess += '| ruby -e \'require "bio-faster";Bio::Faster.new(:stdin).each_record(:quality=>:raw){|v|s=v[1].gsub(/^G+/,"");l=v[1].length-s.length;puts("@#{v[0]}|-G#{l}\\n#{s}\\n+\\n#{v[2][l,s.length]}") if s.length>0}\'' if gtrim
 
+          if qtrim != '~' || mlen > 0
+            preprocess += '| ruby -e \'require "bio-faster";Bio::Faster.new(:stdin).each_record(:quality=>:raw){|v|m=v[2].length-1;0.upto(m){|i|if v[2][i]<"'+qtrim+'" then m=i-1;break;end};puts("@#{v[0]}\n#{v[1][0..m]}\n+\n#{v[2][0..m]}") if m>'+mlen.to_s+'}\''
+          end
+
+          puts preprocess
           exec preprocess+"| xz -z -c -e > #{outpath}"
         }
       }
