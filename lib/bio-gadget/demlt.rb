@@ -134,10 +134,9 @@ FORMAT
           preprocess += '| ruby -e \'require "bio-faster";Bio::Faster.new(:stdin).each_record(:quality=>:raw){|v|s=v[1].gsub(/^G+/,"");l=v[1].length-s.length;puts("@#{v[0]}|-G#{l}\\n#{s}\\n+\\n#{v[2][l,s.length]}") if s.length>0}\'' if gtrim
 
           if qtrim != '~' || mlen > 0
-            preprocess += '| ruby -e \'require "bio-faster";Bio::Faster.new(:stdin).each_record(:quality=>:raw){|v|m=v[2].length-1;0.upto(m){|i|if v[2][i]<"'+qtrim+'" then m=i-1;break;end};puts("@#{v[0]}\n#{v[1][0..m]}\n+\n#{v[2][0..m]}") if m>'+mlen.to_s+'}\''
+            preprocess += '| ruby -e \'require "bio-faster";Bio::Faster.new(:stdin).each_record(:quality=>:raw){|v|m=v[2].length-1;0.upto(m){|i|if v[2][i]<"'+qtrim+'" then m=i-1;break;end};puts("@#{v[0]}\n#{v[1][0..m]}\n+\n#{v[2][0..m]}") if m+1>='+mlen.to_s+'}\''
           end
 
-          puts preprocess
           exec preprocess+"| xz -z -c -e > #{outpath}"
         }
       }
