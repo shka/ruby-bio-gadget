@@ -1,6 +1,7 @@
 require 'bio-gadget/version'
 require 'bio-gadget/dedup'
 require 'bio-gadget/demlt'
+require 'bio-gadget/femrg'
 require 'bio-gadget/fqxz'
 require 'bio-gadget/qvstat'
 require 'bio-gadget/rgt2mtx'

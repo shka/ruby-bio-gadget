@@ -16,7 +16,8 @@ Currently available commands are
 
 - dedup :: Deduplicate fastq (via STDIN)
 - demlt :: Demultiplex fastq by barcodes
-- fqxz :: automatic (re)compression of *.fq(.gz|.bz2) files
+- femrg :: Extract and merge first exons
+- fqxz :: (Re)compression of *.fq(.gz|.bz2) files
 - qvstat :: Statistics of quality values in *.qual file
 - rgt2mtx :: Convert cuffdiff read group tracking file into tab-separated matrix
 - wig5p :: Convert bam-format alignments into wig-format table
