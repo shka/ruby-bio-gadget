@@ -51,7 +51,7 @@ DESC
         end
         raws["#{cols[1]}|#{cols[2]}"] = cols[3]
       }
-      tmp = [id]
+      tmp = [tid2oid.key?(id) ? tid2oid[id] : id]
       raws.keys.sort.each { |k| tmp.push(raws[k]) }
       puts tmp.join("\t")
     end
