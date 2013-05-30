@@ -18,6 +18,7 @@ Currently available commands are
 - demlt :: Demultiplex fastq by barcodes
 - femrg :: Extract and merge first exons
 - fqxz :: (Re)compression of *.fq(.gz|.bz2) files
+- pead :: Find peak within each exon from wigs by a mojority vote.
 - qvstat :: Statistics of quality values in *.qual file
 - rgt2mtx :: Convert cuffdiff read group tracking file into tab-separated matrix
 - wig5p :: Convert bam-format alignments into wig-format table
