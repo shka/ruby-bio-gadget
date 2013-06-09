@@ -1,3 +1,6 @@
+require 'mkfifo'
+require 'parallel'
+
 module Bio
   class Gadget < Thor
 
@@ -24,6 +27,7 @@ DESC
         fp.close
       }
 
+      chr2exon = Hash.new
       open("| grep exon #{gtf}").each { |line|
         cols = line.rstrip.split(/\t/)
         oid = cols[8].match(/oId \"([^\"]+)/).to_a[1]
@@ -33,35 +37,56 @@ DESC
         str = cols[6]
         start = cols[3].to_i
         stop = cols[4].to_i
-        peak = ''
-        #
-        poss = Hash.new
-        nchrpos2val.each { |n, chrpos2val|
-          if chrpos2val.key?(chr)
-            pos2val = chrpos2val[chr]
-            tmppos2val = Hash.new
-            pos2val.each { |pos, val|
-              tmppos2val[pos] = val if start <= pos && pos <= stop
-            }
-            if tmppos2val.size > 0
-              tmpposs = tmppos2val.keys.sort { |a, b|
-                tmppos2val[b] == tmppos2val[a] ? (str == '+' ? (a <=> b) : (b <=> a)) : (tmppos2val[b] <=> tmppos2val[a])
-              }
-              tmppos = tmpposs[0]
-              # puts "#{n} | #{chr}:#{start}-#{stop} #{str} | #{tmpposs}"
-              poss[tmppos] = poss.key?(tmppos) ? poss[tmppos]+1 : 1
-            end
-          end
-        }
-        if poss.size > 0
-          peaks = poss.keys.sort { |a, b|
-            poss[b] == poss[a] ? (str == '+' ? (a <=> b) : (b <=> a)) : (poss[b] <=> poss[a])
-          }
-          peak = peaks[0]
-        end
-        #
-        puts [oid, exn, peak].join("\t")
+        chr2exon[chr] = Array.new unless chr2exon.key?(chr)
+        chr2exon[chr].push([str, oid, exn, start, stop])
       }
+
+      fifopath = mytemppath('fifo-')
+      File.mkfifo(fifopath)
+
+      pid = Kernel.fork {
+        exec "cat #{fifopath}"
+      }
+
+      fp = open(fifopath, 'w')
+      Parallel.each(chr2exon.keys,
+                    :in_processes => Parallel.processor_count) { |chr|
+        #
+        chr2exon[chr].each { |str, oid, exn, start, stop|
+          #
+          peak = ''
+          poss = Hash.new
+          nchrpos2val.each { |n, chrpos2val|
+            if chrpos2val.key?(chr)
+              pos2val = chrpos2val[chr]
+              tmppos2val = Hash.new
+              pos2val.each { |pos, val|
+                tmppos2val[pos] = val if start <= pos && pos <= stop
+              }
+              if tmppos2val.size > 0
+                tmpposs = tmppos2val.keys.sort { |a, b|
+                  tmppos2val[b] == tmppos2val[a] ? (str == '+' ? (a <=> b) : (b <=> a)) : (tmppos2val[b] <=> tmppos2val[a])
+                }
+                tmppos = tmpposs[0]
+                # puts "#{n} | #{chr}:#{start}-#{stop} #{str} | #{tmpposs}"
+                poss[tmppos] = poss.key?(tmppos) ? poss[tmppos]+1 : 1
+              end
+            end
+          }
+          if poss.size > 0
+            peaks = poss.keys.sort { |a, b|
+              poss[b] == poss[a] ? (str == '+' ? (a <=> b) : (b <=> a)) : (poss[b] <=> poss[a])
+            }
+            peak = peaks[0]
+          end
+          #
+          fp.syswrite([oid, exn, peak].join("\t") + "\n")
+        }
+        #
+      }
+      fp.close
+
+      Process.waitall
 
     end
 
