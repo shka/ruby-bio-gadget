@@ -1,7 +1,2 @@
 require "thor"
-
-module Bio
-  class Gadget < Thor
-
-  end
-end
+require "bio/gadget/fq1l"
