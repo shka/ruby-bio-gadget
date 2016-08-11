@@ -1,4 +1,5 @@
 require "bio/gadget/fq1l/convert"
+require "bio/gadget/fq1l/restore"
 require "thor"
 
 module Bio
