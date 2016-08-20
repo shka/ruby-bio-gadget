@@ -2,9 +2,9 @@ module Bio
   module Gadget
     class Fq1l < Thor
       
-      desc 'convert', 'Convert fastq from 4 lines/read to 1 line/read'
+      desc 'cnv', 'Convert fastq from 4 lines/read to 1 line/read'
       
-      def convert
+      def cnv
         exec "#{options.prefix_coreutils}paste - - - -"
       end
       

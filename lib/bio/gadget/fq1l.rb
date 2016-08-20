@@ -1,6 +1,6 @@
-require 'bio/gadget/fq1l/convert'
+require 'bio/gadget/fq1l/cnv'
 require 'bio/gadget/fq1l/nr'
-require 'bio/gadget/fq1l/restore'
+require 'bio/gadget/fq1l/rst'
 
 module Bio
   module Gadget
