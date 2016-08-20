@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
 
-require 'bio/gadget'
+require 'bio/gadgets'
 
-Bio::Gadget.start
+Bio::Gadgets.start

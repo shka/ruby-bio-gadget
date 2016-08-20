@@ -1,12 +1,17 @@
-require "bio/gadget/fq1l/convert"
-require "bio/gadget/fq1l/nr"
-require "bio/gadget/fq1l/restore"
-require "thor"
+require 'bio/gadget/fq1l/convert'
+require 'bio/gadget/fq1l/nr'
+require 'bio/gadget/fq1l/restore'
 
 module Bio
-  class Gadget < Thor
+  module Gadget
+    class Fq1l < Thor
+      
+      class_option :prefix_coreutils,
+                   type: :string,
+                   banner: 'PREFIX',
+                   desc: 'A prefix character for GNU coreutils',
+                   default: system('which gnproc >/dev/null 2>&1') ? 'g' : ''
 
-    register(Fq1l, "fq1l", "fq1l [COMMAND]", "Tools for oneline-fastq")
-    
+    end
   end
 end

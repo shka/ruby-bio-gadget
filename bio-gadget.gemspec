@@ -1,11 +1,11 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'bio/gadget/version'
+require 'bio/gadgets'
 
 Gem::Specification.new do |gem|
   gem.name          = "bio-gadget"
-  gem.version       = Bio::Gadget::VERSION
+  gem.version       = Bio::Gadgets::VERSION
   gem.licenses      = ['MIT']
   gem.summary       = gem.description
   gem.description   = %q{Gadgets for bioinformatics}
