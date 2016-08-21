@@ -5,19 +5,25 @@ module Bio
   module Gadget
     class Fq1l < Thor
 
-      ## Change to 't3 TRIMMED SEQ1 SEQ2 ...', which internally supports 'grep -e SEQ1 -e SEQ2 ...'
-      desc 't3 SEQ TRIMMED', 'Trim sequences that match the 3\'-end with SEQ'
+      desc 't3 TRIMMED SEQ1 [SEQ2 ...]', 'Trim sequences that match the 3\'-end with SEQs'
       
-      def t3(seq, trimmed)
+      def t3(trimmed, *seqs)
+        len = seqs[0].length
+        seqs.each do |seq|
+          abort "SEQs must be a same length." if seq.length != len
+        end
+        patterns = (seqs.map { |seq| "-e '#{seq}\t'" }).join ' '
+        #
         fifo = Dir::Tmpname.create(['rbg.fq1l.t3.', '.fq1l']) {  }
         File.mkfifo(fifo)
         prefix = options.prefix_coreutils 
         pid = Kernel.fork do
-          exec "#{prefix}tee #{fifo} | #{prefix}grep -v '#{seq}\t+'"
+          exec "#{prefix}tee #{fifo} | #{prefix}grep -v #{patterns}"
         end
-        range = 0..(-seq.length-1)
+        #
+        range = 0..(-len-1)
         out = open(trimmed, 'w')
-        open("| #{prefix}grep '#{seq}\t+' #{fifo}").each do |line|
+        open("| #{prefix}grep #{patterns} #{fifo}").each do |line|
           acc, raw, tmp, qual = line.rstrip.split /\t/
           out.puts [acc, raw[range], tmp, qual[range]].join("\t")
         end
