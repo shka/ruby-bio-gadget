@@ -1,8 +1,8 @@
+require 'bio/gadget/fq1l/at3'
 require 'bio/gadget/fq1l/cnv'
 require 'bio/gadget/fq1l/m5'
 require 'bio/gadget/fq1l/nr'
 require 'bio/gadget/fq1l/rst'
-require 'bio/gadget/fq1l/t3'
 
 module Bio
   module Gadget
@@ -13,7 +13,7 @@ module Bio
                    banner: 'PREFIX',
                    desc: 'A prefix character for GNU coreutils',
                    default: system('which gnproc >/dev/null 2>&1') ? 'g' : ''
-
+      
     end
   end
 end
