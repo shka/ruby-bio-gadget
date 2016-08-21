@@ -2,4 +2,12 @@
 
 require 'bio/gadgets'
 
+module Bio
+  class Gadgets < Thor
+    
+    register(Bio::Gadget::Fq1l, 'fq1l', 'fq1l [COMMAND]', 'Tools for oneline-fastq')
+    
+  end
+end
+
 Bio::Gadgets.start
