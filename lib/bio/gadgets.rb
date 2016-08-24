@@ -8,3 +8,5 @@ module Bio
 
   end
 end
+
+require 'bio/gadget/bio_gadget'

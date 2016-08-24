@@ -13,7 +13,7 @@ module Bio
                    banner: 'PREFIX',
                    desc: 'A prefix character for GNU coreutils',
                    default: system('which gnproc >/dev/null 2>&1') ? 'g' : ''
-      
+
     end
   end
 end

@@ -23,7 +23,11 @@ module Bio
           end
         end
         #
-        keys = seqs.keys.sort
+        keys = Array.new
+        seqs.keys.sort.reverse.each do |len|
+          keys << len
+          break if 4**len == seqs[len].length
+        end
         tmps = Array.new(keys.length) do
           Dir::Tmpname.create(['rbg.fq1l.at3.', '.fq1l']) {  }
         end
@@ -36,43 +40,37 @@ module Bio
           Kernel.fork do
             STDIN.reopen r if r
             STDOUT.reopen w if w
-            t3(tmp, seqs[len])
+            t3(len, seqs[len], tmp)
           end
           r.close if r
           w.close if w
         end
         Process.waitall
         #
-        exec "cat #{tmps.join(' ')}"
+        exec "unpigz -c #{tmps.join(' ')}"
       ensure
         tmps.map { |tmp| File.unlink(tmp) } unless tmps.nil?
       end
       
       no_commands do
         
-        def t3(trimmed, seqs)
-          len = seqs[0].length
-          seqs.each do |seq|
-            abort "SEQs must be a same length." if seq.length != len
-          end
-          patterns = (seqs.map { |seq| "-e '#{seq}\t+'" }).join ' '
-          #
+        def t3(len, seqs, trimmed)
           fifo = Dir::Tmpname.create(['rbg.fq1l.t3.', '.fq1l']) {  }
           File.mkfifo(fifo)
-          prefix = options.prefix_coreutils 
+          prefix = options.prefix_coreutils
+          if 4**len == seqs.length
+            pCmds = "#{prefix}cat > #{fifo}"
+            cCmds = "#{prefix}cat #{fifo}"
+          else
+            patterns = (seqs.map { |seq| "-e '#{seq}\t+'" }).join ' '
+            pCmds = "#{prefix}tee #{fifo} | #{prefix}grep -v #{patterns}"
+            cCmds = "#{prefix}grep #{patterns} #{fifo}"
+          end
           pid = Kernel.fork do
-            exec "#{prefix}tee #{fifo} | #{prefix}grep -v #{patterns}"
+            exec pCmds
           end
-          #
-          range = 0..(-len-1)
-          out = open(trimmed, 'w')
-          open("| #{prefix}grep #{patterns} #{fifo}").each do |line|
-            acc, raw, tmp, qual = line.rstrip.split /\t/
-            out.puts [acc, raw[range], tmp, qual[range]].join("\t")
-          end
-          out.close
+          BioGadget.trim3(len, cCmds, trimmed)
           Process.wait(pid)
-        ensure
           File.unlink(fifo) unless fifo.nil?
         end
         

@@ -12,6 +12,7 @@ Gem::Specification.new do |gem|
   gem.authors       = ["Shintaro Katayama"]
   gem.email         = ["shintaro.katayama@gmail.com"]
   gem.homepage      = "https://github.com/shka/ruby-bio-gadget"
+  gem.extensions    = %w[ext/bio_gadget/extconf.rb]
 
   gem.files         = `git ls-files`.split($\)
   gem.bindir        = "exe"                                           
@@ -21,6 +22,7 @@ Gem::Specification.new do |gem|
 
   gem.add_development_dependency "bundler", "~> 1.12"
   gem.add_development_dependency "rake", "~> 10.0"
+  gem.add_development_dependency "rake-compiler"
   gem.add_development_dependency "minitest", "~> 5.0"
 
   gem.add_dependency 'mkfifo'
