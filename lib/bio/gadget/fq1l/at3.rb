@@ -1,6 +1,3 @@
-require 'mkfifo'
-require 'tempfile'
-
 module Bio
   module Gadget
     class Fq1l < Thor
@@ -29,7 +26,7 @@ module Bio
           break if 4**len == seqs[len].length
         end
         tmps = Array.new(keys.length) do
-          Dir::Tmpname.create(['rbg.fq1l.at3.', '.fq1l']) {  }
+          Bio::Gadgets.getTmpname('fq1l.at3', 'fq1l', false)
         end
         pipes = Array.new(keys.length-1) { IO.pipe }
         pipes = [nil, pipes.flatten.reverse, nil].flatten
@@ -47,16 +44,13 @@ module Bio
         end
         Process.waitall
         #
-        exec "unpigz -c #{tmps.join(' ')}"
-      ensure
-        tmps.map { |tmp| File.unlink(tmp) } unless tmps.nil?
+        exec "cat #{tmps.join(' ')}"
       end
       
       no_commands do
         
         def t3(len, seqs, trimmed)
-          fifo = Dir::Tmpname.create(['rbg.fq1l.t3.', '.fq1l']) {  }
-          File.mkfifo(fifo)
+          fifo = Bio::Gadgets.mkfifo('fq1l.t3', 'fq1l')
           prefix = options.prefix_coreutils
           if 4**len == seqs.length
             pCmds = "#{prefix}cat > #{fifo}"
@@ -71,7 +65,6 @@ module Bio
           end
           BioGadget.trim3(len, cCmds, trimmed)
           Process.wait(pid)
-          File.unlink(fifo) unless fifo.nil?
         end
         
       end
