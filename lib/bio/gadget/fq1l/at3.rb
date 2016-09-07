@@ -29,13 +29,13 @@ module Bio
           if 4**length == fragments[length].size
             main += "#{prefix}cat > #{fifo}"
             Kernel.fork do
-              BioGadget.trim3(length, "#{prefix}cat #{fifo}", tmpfile)
+              BioGadget.at3(length, "#{prefix}cat #{fifo}", tmpfile)
             end
           else
             patterns = (fragments[length].map { |fragment| "-e '#{fragment}\t+'" }).join ' '
             main += "#{prefix}tee #{fifo} | #{prefix}grep -v #{patterns} | "
             Kernel.fork do
-              BioGadget.trim3(length, "#{prefix}grep #{patterns} #{fifo}", tmpfile)
+              BioGadget.at3(length, "#{prefix}grep #{patterns} #{fifo}", tmpfile)
             end
           end
         end

@@ -2,7 +2,7 @@
 #include <string.h>
 #include "bio_gadget.h"
 
-VALUE bio_gadget_trim3(vSelf, vLen, vCmdIn, vPathOut)
+VALUE bio_gadget_at3(vSelf, vLen, vCmdIn, vPathOut)
      VALUE vSelf;
      VALUE vLen;
      VALUE vCmdIn;
@@ -14,6 +14,7 @@ VALUE bio_gadget_trim3(vSelf, vLen, vCmdIn, vPathOut)
   char *sep;
   char *qual;
   int len;
+  unsigned long seqlen;
   FILE *fp_in;
   FILE *fp_out;
 
@@ -25,12 +26,43 @@ VALUE bio_gadget_trim3(vSelf, vLen, vCmdIn, vPathOut)
     seq = strtok(NULL, "\t");
     sep = strtok(NULL, "\t");
     qual = strtok(NULL, "\t");
-    seq[strlen(seq)-len] = 0;
-    qual[strlen(qual)-len] = 0;
+    seqlen = strlen(seq)-len;
+    seq[seqlen] = 0;
+    qual[seqlen] = 0; // qual[strlen(qual)-len] = 0;
     fprintf(fp_out, "%s\t%s\t%s\t%s\n", acc, seq, sep, qual);
   }
   fclose(fp_out);
   fclose(fp_in);
+  
+  return Qnil;
+}
+
+VALUE bio_gadget_qt3(vSelf, vLQs)
+     VALUE vSelf;
+     VALUE vLQs;
+{
+  char line[BUFSIZE];
+  char *acc;
+  char *seq;
+  char *sep;
+  char *qual;
+  char *lqs;
+  unsigned long seqlen;
+
+  lqs = StringValueCStr(vLQs);
+  
+  while(fgets(line, BUFSIZE, stdin) != NULL) {
+    acc = strtok(line, "\t");
+    seq = strtok(NULL, "\t");
+    sep = strtok(NULL, "\t");
+    qual = strtok(NULL, "\t\n");
+    seqlen = strcspn(qual, lqs);
+    if (seqlen < strlen(qual)) {
+      seq[seqlen] = 0;
+      qual[seqlen] = 0;
+    }
+    fprintf(stdout, "%s\t%s\t%s\t%s\n", acc, seq, sep, qual);
+  }
   
   return Qnil;
 }
@@ -41,5 +73,6 @@ void
 Init_bio_gadget(void)
 {
   rb_mBio_Gadget = rb_define_module("BioGadget");
-  rb_define_module_function(rb_mBio_Gadget, "trim3", bio_gadget_trim3, 3);
+  rb_define_module_function(rb_mBio_Gadget, "at3", bio_gadget_at3, 3);
+  rb_define_module_function(rb_mBio_Gadget, "qt3", bio_gadget_qt3, 1);
 }
