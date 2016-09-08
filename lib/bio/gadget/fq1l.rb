@@ -1,3 +1,4 @@
+require 'bio/gadget/fq1l/bm'
 require 'bio/gadget/fq1l/cnv'
 require 'bio/gadget/fq1l/m5'
 require 'bio/gadget/fq1l/nr'

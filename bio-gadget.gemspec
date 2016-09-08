@@ -25,6 +25,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "rake-compiler"
   gem.add_development_dependency "minitest", "~> 5.0"
 
+  gem.add_dependency 'damerau-levenshtein'
   gem.add_dependency 'mkfifo'
   gem.add_dependency 'thor'
 end
