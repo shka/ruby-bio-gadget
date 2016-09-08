@@ -11,7 +11,12 @@ module Bio
     def self.getTmpname(prefix, suffix, cleanup=true)
       tmpname = Dir::Tmpname.create(["rbg.#{prefix}.", ".#{suffix}"]) {  }
       if cleanup
-        at_exit { File.unlink(tmpname) if FileTest.exist?(tmpname) || FileTest.pipe?(tmpname) }
+        at_exit {
+          begin
+            File.unlink(tmpname) if FileTest.exist?(tmpname)
+          rescue Errno::ENOENT
+          end
+        }
       end
       tmpname
     end

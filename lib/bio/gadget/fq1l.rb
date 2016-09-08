@@ -1,7 +1,7 @@
-require 'bio/gadget/fq1l/at3'
 require 'bio/gadget/fq1l/cnv'
 require 'bio/gadget/fq1l/m5'
 require 'bio/gadget/fq1l/nr'
+require 'bio/gadget/fq1l/pt3'
 require 'bio/gadget/fq1l/qt3'
 require 'bio/gadget/fq1l/rst'
 
