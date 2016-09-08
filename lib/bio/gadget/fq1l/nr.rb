@@ -19,31 +19,9 @@ module Bio
         pseq = ''
         prefix = options.prefix_coreutils
         if options.degenerated_mode
-          command = <<CMD
-| #{prefix}sort -t '\t' --parallel=`#{prefix}nproc` -r -k2,4 \
-    #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}
-CMD
-          open(command).each do |line|
-            acc, seq, tmp, qual = line.split /\t/
-            if pseq != seq
-              puts line.rstrip
-              pseq = seq
-            end
-          end
+          BioGadget.nr_deg("#{prefix}sort -t '\t' --parallel=`#{prefix}nproc` -r -k2,2 #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}")
         else
-          command = <<CMD
-| #{prefix}sort -t '\t' --parallel=`#{prefix}nproc` -r -k2,2 \
-    #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}
-CMD
-          pseql = 2**(0.size * 8 -2) -1
-          open(command).each do |line|
-            acc, seq, tmp, qual = line.split /\t/
-            if seq.length >= pseq.length || !Regexp.new("^#{seq}").match(pseq).nil?
-              puts line.rstrip
-              pseq = seq
-              pseql = pseq.length
-            end
-          end
+          BioGadget.nr_std("#{prefix}sort -t '\t' --parallel=`#{prefix}nproc` -r -k2,4 #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}")
         end
       end
       
