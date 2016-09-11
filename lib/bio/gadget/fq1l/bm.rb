@@ -30,11 +30,7 @@ module Bio
                     desc: 'Use SIZE for main memory buffer'
       
       def bm(map)
-        bcs = Hash.new
-        open(map, 'r').each do |line|
-          bc, well = line.rstrip.split(',')
-          bcs[bc] = well
-        end
+        bcs = readBarcodeMap(map)
         #
         pbc = ''
         pwell = ''

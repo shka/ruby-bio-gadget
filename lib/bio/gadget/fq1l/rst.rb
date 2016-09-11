@@ -5,7 +5,7 @@ module Bio
       desc 'rst', 'Restore fastq from 1 line/read to 4 lines/read'
       
       def rst
-        exec "#{options.prefix_coreutils}cut -f 1-4 | #{options.prefix_coreutils}tr \"\\t\" \"\\n\""
+        exec "#{options.prefix_coreutils}tr \"\\t\" \"\\n\""
       end
       
     end
