@@ -9,32 +9,39 @@ module Bio
       method_option :begin,
                     aliases: '-b',
                     default: 7,
-                    type: :numeric,
-                    desc: 'Start position of barcode'
+                    desc: 'Start position of barcode',
+                    type: :numeric
       
       method_option :end,
                     aliases: '-e',
                     default: 12,
-                    type: :numeric,
-                    desc: 'End position of barcode'
+                    desc: 'End position of barcode',
+                    type: :numeric
 
       method_option :maximum_distance,
                     aliases: '-d',
                     default: 1,
-                    type: :numeric,
-                    desc: 'Maximum distance between barcode and sequence'
+                    desc: 'Maximum distance between barcode and sequence',
+                    type: :numeric
 
       method_option :buffer_size,
                     banner: 'SIZE',
                     aliases: '-S',
-                    desc: 'Use SIZE for main memory buffer'
+                    desc: 'Use SIZE for main memory buffer',
+                    type: :string
       
       method_option :prefix_coreutils,
-                    type: :string,
                     banner: 'PREFIX',
+                    default: system('which gnproc >/dev/null 2>&1') ? 'g' : '',
                     desc: 'A prefix character for GNU coreutils',
-                    default: system('which gnproc >/dev/null 2>&1') ? 'g' : ''
+                    type: :string
 
+      method_option :parallel,
+                    banner: 'N',
+                    default: system('which gnproc >/dev/null 2>&1') ? `gnproc`.to_i : (system('which nproc >/dev/null 2>&1') ? `nproc`.to_i : 2),
+                    desc: 'Change the number of sorts run concurrently to N',
+                    type: :numeric
+                    
       def bm(map)
         bcs = readBarcodeMap(map)
         #
@@ -44,8 +51,7 @@ module Bio
         eidx = options.end-1
         bcr = bidx..eidx
         dl = DamerauLevenshtein
-        prefix = options.prefix_coreutils
-        open("| #{prefix}sort -t '\t' --parallel=`#{prefix}nproc` -k2.#{options.begin},2.#{options.end} #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}", 'r').each do |line|
+        open("| #{options.prefix_coreutils}sort -t '\t' --parallel=#{options.parallel} -k2.#{options.begin},2.#{options.end} #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}", 'r').each do |line|
           acc, seq, sep, qual = line.rstrip.split(/\t/)
           bc = seq[bcr]
           if bc != pbc
