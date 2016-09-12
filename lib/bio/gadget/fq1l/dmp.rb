@@ -2,13 +2,8 @@ module Bio
   module Gadget
     class Fq1l < Thor
 
-      desc 'dmp MAP', 'Dempltiplex (and restore)'
+      desc 'dmp MAP BASE', 'Dempltiplex (and restore); BASE is a basename of the demultiplexed files'
 
-      method_option :prefix,
-                    aliases: '-p',
-                    desc: 'prefix for output files',
-                    type: :string
-      
       method_option :prefix_coreutils,
                     type: :string,
                     banner: 'PREFIX',
@@ -21,7 +16,7 @@ module Bio
                     desc: 'A prefix character for GNU grep',
                     default: system('which ggrep >/dev/null 2>&1') ? 'g' : ''
 
-      def dmp(map)
+      def dmp(map, base)
         bcs = readBarcodeMap(map)
         #
         prefix = options.prefix_coreutils
@@ -31,7 +26,7 @@ module Bio
           fifo = Bio::Gadgets.mkfifo('fq1l.dmp', 'fq1l')
           cmds += "#{prefix}tee #{fifo} | "
           Process.fork do
-            exec "#{gprefix}grep -P '^[^\t]+ #{well}\t' #{fifo} | #{prefix}tr \"\\t\" \"\\n\" | pigz -c > #{options.prefix}.#{well}.fq.gz"
+            exec "#{gprefix}grep -P '^[^\t]+ #{well}\t' #{fifo} | #{prefix}tr \"\\t\" \"\\n\" | pigz -c > #{base}.#{well}.fq.gz"
           end
         end
         #
