@@ -6,7 +6,7 @@ require 'bio/gadget/fq1l'
 module Bio
   class Gadgets < Thor
     
-    VERSION = '0.5.0'
+    # VERSION = '0.5.0'
     
     def self.getTmpname(prefix, suffix, cleanup=true)
       tmpname = Dir::Tmpname.create(["rbg.#{prefix}.", ".#{suffix}"]) {  }
