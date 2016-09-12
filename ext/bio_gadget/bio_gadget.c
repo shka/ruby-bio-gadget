@@ -64,13 +64,18 @@ VALUE bio_gadget_nr_deg(vSelf, vCmd)
     seq = strtok(NULL, "\t");
     sep = strtok(NULL, "\t");
     qual = strtok(NULL, "\t");
-    sprintf(regexs, "^%s", seq);
-    regcomp(&regexc, regexs, REG_NOSUB);
-    if (strlen(seq) > pseql
-	|| regexec(&regexc, pseq, 0, NULL, 0) == REG_NOMATCH) {
+    if (strlen(seq) >= pseql) {
       printf("%s\t%s\t%s\t%s", acc, seq, sep, qual);
       strcpy(pseq, seq);
       pseql = strlen(seq);
+    } else {
+      sprintf(regexs, "^%s", seq);
+      regcomp(&regexc, regexs, REG_NOSUB);
+      if (regexec(&regexc, pseq, 0, NULL, 0) == REG_NOMATCH) {
+	printf("%s\t%s\t%s\t%s", acc, seq, sep, qual);
+	strcpy(pseq, seq);
+	pseql = strlen(seq);
+      }
     }
     regfree(&regexc);
   }
