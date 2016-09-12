@@ -17,6 +17,18 @@ module Bio
                     desc: 'Minimum length after trimming',
                     type: :numeric
       
+      method_option :prefix_coreutils,
+                    type: :string,
+                    banner: 'PREFIX',
+                    desc: 'A prefix character for GNU coreutils',
+                    default: system('which gnproc >/dev/null 2>&1') ? 'g' : ''
+
+      method_option :prefix_grep,
+                    type: :string,
+                    banner: 'PREFIX',
+                    desc: 'A prefix character for GNU grep',
+                    default: system('which ggrep >/dev/null 2>&1') ? 'g' : ''
+
       def pt3
         primer = options.primer
         fragments = Hash.new
@@ -35,6 +47,7 @@ module Bio
         end
         #
         prefix = options.prefix_coreutils
+        gprefix = options.prefix_grep
         main = ''
         fifos = Array.new
         tmpfiles = Array.new
@@ -49,9 +62,9 @@ module Bio
             end
           else
             patterns = (fragments[length].map { |fragment| "-e '#{fragment}\t+'" }).join ' '
-            main += "#{prefix}tee #{fifo} | #{prefix}grep -v #{patterns} | "
+            main += "#{prefix}tee #{fifo} | #{gprefix}grep -v #{patterns} | "
             Kernel.fork do
-              BioGadget.pt3(length, "#{prefix}grep #{patterns} #{fifo}", tmpfile, mlen)
+              BioGadget.pt3(length, "#{gprefix}grep #{patterns} #{fifo}", tmpfile, mlen)
             end
           end
           at_exit {

@@ -29,6 +29,12 @@ module Bio
                     aliases: '-S',
                     desc: 'Use SIZE for main memory buffer'
       
+      method_option :prefix_coreutils,
+                    type: :string,
+                    banner: 'PREFIX',
+                    desc: 'A prefix character for GNU coreutils',
+                    default: system('which gnproc >/dev/null 2>&1') ? 'g' : ''
+
       def bm(map)
         bcs = readBarcodeMap(map)
         #

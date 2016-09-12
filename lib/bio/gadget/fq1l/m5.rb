@@ -10,8 +10,14 @@ module Bio
                     aliases: '-v',
                     desc: 'Invert the sense of matching, to select non-matching lines'
       
+      method_option :prefix_grep,
+                    type: :string,
+                    banner: 'PREFIX',
+                    desc: 'A prefix character for GNU grep',
+                    default: system('which ggrep >/dev/null 2>&1') ? 'g' : ''
+
       def m5(pattern)
-        exec "#{options.prefix_coreutils}grep #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t#{pattern}'"
+        exec "#{options.prefix_grep}grep #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t#{pattern}'"
       end
       
     end
