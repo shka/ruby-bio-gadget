@@ -1,5 +1,4 @@
-require "io/wait"
-
+require 'io/wait'
 require 'damerau-levenshtein'
 
 module Bio

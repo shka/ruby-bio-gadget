@@ -1,4 +1,4 @@
-require "io/wait"
+require 'io/wait'
 
 module Bio
   module Gadget
