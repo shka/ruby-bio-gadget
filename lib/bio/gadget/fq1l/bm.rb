@@ -1,3 +1,5 @@
+require "io/wait"
+
 require 'damerau-levenshtein'
 
 module Bio
@@ -44,6 +46,8 @@ module Bio
                     
       def bm(map)
         bcs = readBarcodeMap(map)
+        #
+        exit unless STDIN.wait
         #
         pbc = ''
         pwell = ''

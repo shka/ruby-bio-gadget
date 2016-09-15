@@ -1,3 +1,5 @@
+require "io/wait"
+
 module Bio
   module Gadget
     class Fq1l < Thor
@@ -29,6 +31,8 @@ module Bio
                     type: :numeric
                     
       def nr
+        exit unless STDIN.wait
+        #
         pseq = ''
         if options.degenerated_mode
           BioGadget.nr_deg("#{options.prefix_coreutils}sort -t '\t' --parallel=#{options.parallel} -r -k2,2 #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}")
