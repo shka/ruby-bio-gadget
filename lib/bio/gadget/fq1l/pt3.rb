@@ -1,3 +1,5 @@
+require "io/wait"
+
 module Bio
   module Gadget
     class Fq1l < Thor
@@ -46,6 +48,8 @@ module Bio
           end
         end
         #
+        exit unless STDIN.wait
+        #
         prefix = options.prefix_coreutils
         gprefix = options.prefix_grep
         main = ''
@@ -84,8 +88,8 @@ module Bio
           }
         }
         system main
-        system "#{prefix}cat #{tmpfiles.join(' ')}"
         Process.waitall
+        system "#{prefix}cat #{tmpfiles.join(' ')}"
       end
       
     end

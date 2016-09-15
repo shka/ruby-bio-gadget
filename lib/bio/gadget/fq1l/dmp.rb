@@ -1,3 +1,5 @@
+require "io/wait"
+
 module Bio
   module Gadget
     class Fq1l < Thor
@@ -18,6 +20,8 @@ module Bio
 
       def dmp(map, base)
         bcs = readBarcodeMap(map)
+        #
+        exit unless STDIN.wait
         #
         prefix = options.prefix_coreutils
         gprefix = options.prefix_grep
