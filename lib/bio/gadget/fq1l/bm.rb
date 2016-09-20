@@ -8,19 +8,16 @@ module Bio
       desc 'bm MAP', 'Barcode match; a csv file MAP w/ barcode sequence and wellname'
 
       method_option :begin,
-                    aliases: '-b',
                     default: 7,
                     desc: 'Start position of barcode',
                     type: :numeric
       
       method_option :end,
-                    aliases: '-e',
                     default: 12,
                     desc: 'End position of barcode',
                     type: :numeric
 
       method_option :maximum_distance,
-                    aliases: '-d',
                     default: 1,
                     desc: 'Maximum distance between barcode and sequence',
                     type: :numeric
@@ -38,6 +35,7 @@ module Bio
                     type: :string
 
       method_option :parallel,
+                    alias: '-p',
                     banner: 'N',
                     default: system('which gnproc >/dev/null 2>&1') ? `gnproc`.to_i : (system('which nproc >/dev/null 2>&1') ? `nproc`.to_i : 2),
                     desc: 'Change the number of sorts run concurrently to N',

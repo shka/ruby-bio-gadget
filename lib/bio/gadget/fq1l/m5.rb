@@ -7,7 +7,6 @@ module Bio
 
       method_option :invert_match,
                     type: :boolean,
-                    aliases: '-v',
                     desc: 'Invert the sense of matching, to select non-matching lines'
       
       method_option :prefix_grep,

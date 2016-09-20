@@ -1,8 +1,3 @@
-# coding: utf-8
-# lib = File.expand_path('../lib', __FILE__)
-# $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-# require 'bio/gadgets'
-
 Gem::Specification.new do |gem|
   gem.name          = "bio-gadget"
   gem.version       = "0.5.0" # Bio::Gadgets::VERSION

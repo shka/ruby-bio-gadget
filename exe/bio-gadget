@@ -6,6 +6,7 @@ module Bio
   class Gadgets < Thor
     
     register(Bio::Gadget::Fq1l, 'fq1l', 'fq1l [COMMAND]', 'Tools for oneline-fastq')
+    register(Bio::Gadget::STRT, 'strt', 'strt [COMMAND]', 'Tools for STRT RNAseq')
     
   end
 end

@@ -7,13 +7,11 @@ module Bio
       desc 'pt3', 'Primer trimming, 3\'-end'
 
       method_option :primer,
-                    aliases: '-p',
                     default: 'AGATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG',
                     desc: 'Primer sequence that be used for trimming',
                     type: :string
       
       method_option :minimum_length,
-                    aliases: '-l',
                     banner: 'NT',
                     default: 40,
                     desc: 'Minimum length after trimming',

@@ -2,11 +2,10 @@ require 'mkfifo'
 require 'tempfile'
 require 'thor'
 require 'bio/gadget/fq1l'
+require 'bio/gadget/strt'
 
 module Bio
   class Gadgets < Thor
-    
-    # VERSION = '0.5.0'
     
     def self.getTmpname(prefix, suffix, cleanup=true)
       tmpname = Dir::Tmpname.create(["rbg.#{prefix}.", ".#{suffix}"]) {  }

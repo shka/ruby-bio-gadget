@@ -5,7 +5,6 @@ module Bio
       desc 'mt5 PATTERN', 'Match trimming, 5\'-end'
 
       method_option :minimum_length,
-                    alias: '-l',
                     banner: 'NT',
                     default: 25,
                     desc: 'Minimum length after trimming',

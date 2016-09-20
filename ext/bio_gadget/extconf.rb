@@ -1,3 +1,3 @@
 require "mkmf"
 
-create_makefile("bio_gadget/bio_gadget")
+create_makefile("bio/gadget/bio_gadget")

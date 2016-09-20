@@ -4,7 +4,7 @@
 #include <string.h>
 #include "bio_gadget.h"
 
-VALUE bio_gadget_mt5(vSelf, vPattern, vMinLen)
+VALUE bio_gadget_fq1l_mt5(vSelf, vPattern, vMinLen)
      VALUE vSelf;
      VALUE vPattern;
      VALUE vMinLen;
@@ -43,7 +43,7 @@ VALUE bio_gadget_mt5(vSelf, vPattern, vMinLen)
   return Qnil;
 }
 
-VALUE bio_gadget_nr_deg(vSelf, vCmd)
+VALUE bio_gadget_fq1l_nr_deg(vSelf, vCmd)
      VALUE vSelf;
      VALUE vCmd;
 {
@@ -84,7 +84,7 @@ VALUE bio_gadget_nr_deg(vSelf, vCmd)
   return Qnil;
 }
 
-VALUE bio_gadget_nr_std(vSelf, vCmd)
+VALUE bio_gadget_fq1l_nr_std(vSelf, vCmd)
      VALUE vSelf;
      VALUE vCmd;
 {
@@ -112,7 +112,7 @@ VALUE bio_gadget_nr_std(vSelf, vCmd)
   return Qnil;
 }
 
-VALUE bio_gadget_pt3(vSelf, vLen, vCmdIn, vPathOut, vMinLen)
+VALUE bio_gadget_fq1l_pt3(vSelf, vLen, vCmdIn, vPathOut, vMinLen)
      VALUE vSelf;
      VALUE vLen;
      VALUE vCmdIn;
@@ -153,7 +153,7 @@ VALUE bio_gadget_pt3(vSelf, vLen, vCmdIn, vPathOut, vMinLen)
   return Qnil;
 }
 
-VALUE bio_gadget_qt3(vSelf, vLQs, vMinLen)
+VALUE bio_gadget_fq1l_qt3(vSelf, vLQs, vMinLen)
      VALUE vSelf;
      VALUE vLQs;
      VALUE vMinLen;
@@ -194,9 +194,9 @@ void
 Init_bio_gadget(void)
 {
   rb_mBio_Gadget = rb_define_module("BioGadget");
-  rb_define_module_function(rb_mBio_Gadget, "mt5", bio_gadget_mt5, 2);
-  rb_define_module_function(rb_mBio_Gadget, "nr_deg", bio_gadget_nr_deg, 1);
-  rb_define_module_function(rb_mBio_Gadget, "nr_std", bio_gadget_nr_std, 1);
-  rb_define_module_function(rb_mBio_Gadget, "pt3", bio_gadget_pt3, 4);
-  rb_define_module_function(rb_mBio_Gadget, "qt3", bio_gadget_qt3, 2);
+  rb_define_module_function(rb_mBio_Gadget, "mt5", bio_gadget_fq1l_mt5, 2);
+  rb_define_module_function(rb_mBio_Gadget, "nr_deg", bio_gadget_fq1l_nr_deg, 1);
+  rb_define_module_function(rb_mBio_Gadget, "nr_std", bio_gadget_fq1l_nr_std, 1);
+  rb_define_module_function(rb_mBio_Gadget, "pt3", bio_gadget_fq1l_pt3, 4);
+  rb_define_module_function(rb_mBio_Gadget, "qt3", bio_gadget_fq1l_qt3, 2);
 }
