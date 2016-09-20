@@ -35,7 +35,7 @@ module Bio
                     type: :string
 
       method_option :parallel,
-                    alias: '-p',
+                    aliases: '-p',
                     banner: 'N',
                     default: system('which gnproc >/dev/null 2>&1') ? `gnproc`.to_i : (system('which nproc >/dev/null 2>&1') ? `nproc`.to_i : 2),
                     desc: 'Change the number of sorts run concurrently to N',

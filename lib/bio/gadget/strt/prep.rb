@@ -51,7 +51,7 @@ module Bio
                     type: :numeric
       
       method_option :parallel,
-                    alias: '-p',
+                    aliases: '-p',
                     banner: 'N',
                     default: system('which gnproc >/dev/null 2>&1') ? `gnproc`.to_i : (system('which nproc >/dev/null 2>&1') ? `nproc`.to_i : 2),
                     desc: 'Change the number of sorts run concurrently to N',
@@ -95,7 +95,7 @@ gunzip -c #{fqgz} #{fqgzs.join(' ')} \
 | #{cPrefix0}tee #{fifos[0]} \
 | fq1l nr #{bSize} #{cPrefix} #{parallel} \
 | #{cPrefix0}tee #{fifos[1]} \
-| fq1l m5 #{gPrefix} #{match}\
+| fq1l m5 #{gPrefix} #{match} \
 | fq1l m5 #{gPrefix} --invert-match '[^\\t]*N' \
 | #{cPrefix0}tee #{fifos[2]} \
 | fq1l qt3 --low-qualities='#{options.low_qualities}' --minimum-length=#{mLength0} \
