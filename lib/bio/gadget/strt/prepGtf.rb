@@ -38,7 +38,7 @@ module Bio
         open(tmpfile).each do |line|
           cols = line.rstrip.split(reSep)
           tid = reTid.match(cols[8]).to_a[1]
-          newAttr = tid2sym.key?(tid) ? "#{cols[8]} gene_symbol; \"#{tid2sym[tid]}\"" : cols[8]
+          newAttr = tid2sym.key?(tid) ? "#{cols[8]} gene_symbol \"#{tid2sym[tid]}\"; " : cols[8]
           if cols[2] == 'transcript'
             fp.puts [cols[0], cols[1], 'promoter',
                      cols[6] == '+' ? cols[3].to_i-pLength : cols[4].to_i+1,
