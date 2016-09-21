@@ -1,3 +1,4 @@
+require 'bio/gadget/strt/bam2bed5p.rb'
 require 'bio/gadget/strt/prepBed.rb'
 require 'bio/gadget/strt/prepGtf.rb'
 require 'bio/gadget/strt/prepSeq.rb'
