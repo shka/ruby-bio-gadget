@@ -2,7 +2,7 @@ module Bio
   module Gadget
     class STRT < Thor
 
-      desc 'prep MAP BASE FQGZ [FQGZ ...]', 'Preprocess of FQGZs with demuliplex based on MAP and BASE, and also the quality reports'
+      desc 'prepSeq MAP BASE FQGZ [FQGZ ...]', 'Preprocess of FQGZs with demuliplex based on MAP and BASE, and also the quality reports'
 
       method_option :buffer_size,
                     aliases: '-S',
@@ -69,7 +69,7 @@ module Bio
                     desc: 'A prefix character for GNU grep',
                     default: system('which ggrep >/dev/null 2>&1') ? 'g' : ''
 
-      def prep(map, base, fqgz, *fqgzs)
+      def prepSeq(map, base, fqgz, *fqgzs)
         bSize = options.key?('buffer_size') ? '--buffer-size='+options.buffer_size : ''
         parallel = "--parallel=#{options.parallel}"
         cPrefix0 = options.prefix_coreutils
@@ -81,7 +81,7 @@ module Bio
         mLength = options.length_minimum
         mLength0 = mLength + uLength + bLength + gLength
         match = "#{'.' * uLength}#{'.' * bLength}#{'G' * (gLength-1)}"
-        fifos = Array.new(6) { Bio::Gadgets.mkfifo('strt', 'fq1l') }
+        fifos = Array.new(6) { Bio::Gadgets.mkfifo('strt.prepSeq', 'fq1l') }
         fifos.each_index do |i|
           Process.fork do
             exec "#{cPrefix0}cut -f 2 #{fifos[i]}| ruby -nle 'puts $_.length' | #{cPrefix0}sort -n #{parallel} | #{cPrefix0}uniq -c | ruby -nle \"puts \\$_.lstrip.tr(' ',',')\" > #{base}.stat#{i}.csv"
@@ -117,21 +117,3 @@ CMD
     end
   end
 end
-
-  # time \
-  #   unpigz -c \
-  #     /proj/b2014069/nobackup/private/STRTprep3.NATHALIEB/src/run42/lane2_NoIndex_L002_R1_001.fastq.gz \
-  #     /proj/b2014069/nobackup/private/STRTprep3.NATHALIEB/src/run42/lane3_NoIndex_L003_R1_001.fastq.gz \
-  #     /proj/b2014069/nobackup/private/STRTprep3.NATHALIEB/src/run42/lane4_NoIndex_L004_R1_001.fastq.gz \
-  # | bundle exec exe/fq1l cnv \
-  # | bundle exec exe/fq1l nr -S 12% --parallel=\$SLURM_NNODES \
-  # | bundle exec exe/fq1l m5 ............GG \
-  # | bundle exec exe/fq1l m5 -v '[^\t]*N' \
-  # | bundle exec exe/fq1l qt3 \
-  # | bundle exec exe/fq1l pt3 \
-  # | bundle exec exe/fq1l nr --degenerated-mode -S 12% --parallel=\$SLURM_NNODES \
-  # | bundle exec exe/fq1l bm -S 12% --parallel=\$SLURM_NNODES barcodes.csv \
-  # | bundle exec exe/fq1l mt5 ............GG+ \
-  # | bundle exec exe/fq1l dmp barcodes.csv ../seq/NATHALIE2B --parallel=\$SLURM_NNODES \
-  # | pigz --processes \$SLURM_NNODES -c > ../seq/NATHALIE2B.undef.fq1l.gz
-  # EOF
