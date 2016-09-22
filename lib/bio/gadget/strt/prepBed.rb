@@ -2,8 +2,8 @@ module Bio
   module Gadget
     class STRT < Thor
 
-      desc 'prepBed FAI GTF [BASE]',
-           'Preprocess annotation files to create bed files at BASE for STRT'
+      desc 'prepBed FAI GTF [ANNBASE]',
+           'Preprocess annotation files to create bed files at ANNBASE for STRT'
 
       method_option :prefix_coreutils,
                     banner: 'PREFIX',
