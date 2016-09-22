@@ -35,7 +35,7 @@ module Bio
         reSep = /\t/
         
         fp = open("| #{options.prefix_coreutils}sort #{bSize} #{parallel} -k 1,1 -k 2,2n -k 3,3n -k 4,4", 'w')
-        open("| samtools view #{bam} -b -q #{options.minimum_quality} | bedtools bamtobed -i stdin -nonamecheck").each do |line|
+        open("| samtools view #{bam} -b -q #{options.minimum_quality} | bedtools bamtobed -i stdin").each do |line|
           cols = line.rstrip.split(reSep)
           fp.puts ([cols[0],
                     cols[5] == '+' ? cols[1] : cols[2],
