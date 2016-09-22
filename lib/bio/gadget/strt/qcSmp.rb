@@ -65,7 +65,7 @@ module Bio
             values[4] / values[3], # 5'-end capture rate among spike-ins
             values[7] / values[6]  # 5'-end capture rate among mRNAs
           ]
-        ).join("\t")
+        ).join(',')
         
       end
       
