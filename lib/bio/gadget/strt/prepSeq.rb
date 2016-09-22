@@ -109,7 +109,7 @@ gunzip -c #{fqgz} #{fqgzs.join(' ')} \
 | fq1l dmp #{cPrefix} #{gPrefix} #{parallel} #{map} #{base} \
 | pigz --processes #{options.parallel} -c > #{base}.undef.fq1l.gz
 CMD
-        STDERR.puts cmd
+        # STDERR.puts cmd
         system cmd
         Process.waitall
       end
