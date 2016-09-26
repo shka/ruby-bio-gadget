@@ -1,5 +1,6 @@
 require 'bio'
 require 'mkfifo'
+require 'parallel'
 require 'tempfile'
 require 'thor'
 
@@ -118,8 +119,74 @@ module Bio
       tmpfiles.each do |tmpfile|
         File.unlink(tmpfile) if FileTest.exist?(tmpfile)
       end
-
+      
     end
+
+    #
+
+    desc 'gap BEDgz1 BEDgz2',
+         "Calculate gap distances from 5'-end of fragments 1 to 3'-end of fragments 2"
+
+    method_option *option_parallel
+    method_option *option_prefix_coreutils
+
+    method_option :minimum_gap,
+                  default: -2000,
+                  desc: 'Minimum gap distans to be reported',
+                  type: :numeric
+
+    method_option :maximum_gap,
+                  default: 500,
+                  desc: 'Maximum gap distans to be reported',
+                  type: :numeric
+
+    def gap(bedgz1, bedgz2)
+
+      cPrefix = options.prefix_coreutils
+
+      chrs = Hash.new
+      open("| unpigz -c #{bedgz1} #{bedgz2} | #{cPrefix}cut -f 1 | #{cPrefix}uniq | #{cPrefix}sort -u").each do |line|
+        chrs[line.rstrip] = ''
+      end
+
+      max = options.maximum_gap
+      min = options.minimum_gap
+      reSep = /\t/
+      tmpfiles = Hash.new
+      chrs.keys.each do |chr|
+        tmpfiles[chr] = Bio::Gadgets.getTmpname('gap', 'csv', false)
+      end
+      Parallel.each(chrs.keys, in_processes: options.parallel) do |chr|
+        bed2 = Array.new
+        open("| gunzip -c #{bedgz2} | grep '^#{chr}\t'").each do |line|
+          chr0, *cols = line.rstrip.split(reSep)
+          cols[0] = cols[0].to_i
+          cols[1] = cols[1].to_i
+          bed2 << cols
+        end
+        fp = open(tmpfiles[chr], 'w')
+        open("| gunzip -c #{bedgz1} | grep '^#{chr}\t'").each do |line|
+          chr0, start, stop, name, score, str = line.rstrip.split(reSep)
+          if str == '+'
+            bed2.each do |bed|
+              dist = bed[1] - start.to_i + 1
+              fp.puts [name, bed[2], dist].join("\t") if min <= dist && dist < max
+            end
+          else
+            bed2.each do |bed|
+              dist = stop.to_i - bed[0] + 1
+              fp.puts [name, bed[2], dist].join("\t") if min <= dist && dist < max
+            end
+          end
+        end
+        fp.close
+      end
+      system "cat #{tmpfiles.values.join(' ')}"
+      tmpfiles.each_value do |tmpfile|
+        File.unlink(tmpfile) if FileTest.exist?(tmpfile)
+      end
+    end
+    
   end
 end
 
