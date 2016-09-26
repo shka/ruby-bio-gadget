@@ -170,12 +170,12 @@ module Bio
           if str == '+'
             bed2.each do |bed|
               dist = bed[1] - start.to_i + 1
-              fp.puts [name, bed[2], dist].join("\t") if min <= dist && dist < max
+              fp.puts [name, bed[2], dist].join(',') if min <= dist && dist < max
             end
           else
             bed2.each do |bed|
               dist = stop.to_i - bed[0] + 1
-              fp.puts [name, bed[2], dist].join("\t") if min <= dist && dist < max
+              fp.puts [name, bed[2], dist].join(',') if min <= dist && dist < max
             end
           end
         end
