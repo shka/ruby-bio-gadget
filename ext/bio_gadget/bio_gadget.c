@@ -188,6 +188,31 @@ VALUE bio_gadget_fq1l_qt3(vSelf, vLQs, vMinLen)
   return Qnil;
 }
 
+VALUE bio_gadget_fq1l_to(vSelf, vDraw, vSkip)
+     VALUE vSelf;
+     VALUE vDraw;
+     VALUE vSkip;
+{
+  char line[BUFSIZE];
+  unsigned int draw;
+  unsigned int skip;
+  unsigned int sum;
+  unsigned long count;
+
+  draw = NUM2INT(vDraw);
+  skip = NUM2INT(vSkip);
+  sum = draw + skip;
+  count = 0;
+
+  while(fgets(line, BUFSIZE, stdin) != NULL) {
+    if (count % sum < draw)
+      fputs(line, stdout);
+    count += 1;
+  }
+
+  return Qnil;
+}
+
 VALUE rb_mBio_Gadget;
 
 void
@@ -199,4 +224,5 @@ Init_bio_gadget(void)
   rb_define_module_function(rb_mBio_Gadget, "nr_std", bio_gadget_fq1l_nr_std, 1);
   rb_define_module_function(rb_mBio_Gadget, "pt3", bio_gadget_fq1l_pt3, 4);
   rb_define_module_function(rb_mBio_Gadget, "qt3", bio_gadget_fq1l_qt3, 2);
+  rb_define_module_function(rb_mBio_Gadget, "to", bio_gadget_fq1l_to, 2);
 }
