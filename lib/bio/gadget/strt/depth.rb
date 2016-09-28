@@ -18,6 +18,11 @@ module Bio
       method_option *OPT_LENGTH_UMI
       method_option *OPT_LOW_QUALITIES
 
+      method_option :tss,
+                    default: false,
+                    desc: 'Check number of TSSs, instead of STRT reads',
+                    type: :boolean
+
       def depth(fqgz, *fqgzs0)
         
         bSize,
@@ -36,6 +41,8 @@ module Bio
         tmpfiles = Array.new(fqgzs.length) do |i|
           Bio::Gadgets.getTmpname('strt.depth', 'fq1l')
         end
+        tsscmd =
+          options.tss ? "fq1l mt5 --minimum-length=#{mLen} #{match}+ | #{cPfx0}cut -f 2 | #{cPfx0}sort #{bSize} #{par} -u |" : ''
         indexes = Array.new(fqgzs.length) { |i| i }
         Parallel.each(indexes, in_threads: options.parallel) do |i|
           system "gunzip -c #{fqgzs[i]} | fq1l cnv #{cPfx} > #{tmpfiles[i]}"
@@ -54,7 +61,7 @@ module Bio
 | fq1l qt3 --low-qualities='#{options.low_qualities}' --minimum-length=#{pLen} \
 | fq1l pt3 --primer=AGATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG --minimum-length=#{pLen} #{cPfx} #{gPfx} \
 | fq1l nr #{bSize} --degenerated-mode #{cPfx} #{par} \
-| #{cPfx0}wc -l
+| #{tsscmd} #{cPfx0}wc -l
 CMD
                     )
           raw = fp0.gets.strip.split(/\s+/)[0]
