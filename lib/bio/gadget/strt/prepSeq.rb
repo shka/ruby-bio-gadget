@@ -25,7 +25,7 @@ module Bio
                     desc: 'Maximum number of raw reads for (debug of) the preprocess',
                     type: :numeric
       
-      def prepSeq(map, base, fqgz, *fqgzs)
+      def prepSeq(map, base, fqgz, *fqgzs0)
 
         bSize,
         cPfx,
@@ -39,6 +39,15 @@ module Bio
         match,
         cPfx0 = self.configure_prepSeq(options)
 
+        fqgzs = [fqgz] + fqgzs0
+        tmpfiles = Array.new(fqgzs.length) do |i|
+          Bio::Gadgets.getTmpname('strt.depth', 'fq1l')
+        end
+        indexes = Array.new(fqgzs.length) { |i| i }
+        Parallel.each(indexes, in_threads: options.parallel) do |i|
+          system "gunzip -c #{fqgzs[i]} | fq1l cnv #{cPfx} > #{tmpfiles[i]}"
+        end
+        
         fifos = Array.new(6) { Bio::Gadgets.mkfifo('strt.prepSeq', 'fq1l') }
         fifos.each_index do |i|
           Process.fork do
@@ -47,8 +56,7 @@ module Bio
         end
         
         cmd = <<CMD
-LC_ALL=C unpigz -c #{fqgz} #{fqgzs.join(' ')} \
-| fq1l cnv #{cPfx} #{options.key?('maximum_reads') ? '| '+cPfx0+'head -n '+options.maximum_reads.to_s : ''} \
+LC_ALL=C cat #{tmpfiles.join(' ')} #{options.key?('maximum_reads') ? '| '+cPfx0+'head -n '+options.maximum_reads.to_s : ''} \
 | #{cPfx0}tee #{fifos[0]} \
 | fq1l nr #{bSize} #{cPfx} #{par} \
 | #{cPfx0}tee #{fifos[1]} \

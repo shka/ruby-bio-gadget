@@ -1,3 +1,5 @@
+require 'parallel'
+
 module Bio
   module Gadget
     class STRT < Thor
@@ -31,14 +33,19 @@ module Bio
         cPfx0 = Bio::Gadget::STRT.configure_prepSeq(options)
 
         fqgzs = [fqgz] + fqgzs0
-        reads = Hash.new
-
+        tmpfiles = Array.new(fqgzs.length) do |i|
+          Bio::Gadgets.getTmpname('strt.depth', 'fq1l')
+        end
+        indexes = Array.new(fqgzs.length) { |i| i }
+        Parallel.each(indexes, in_threads: options.parallel) do |i|
+          system "gunzip -c #{fqgzs[i]} | fq1l cnv #{cPfx} > #{tmpfiles[i]}"
+        end
+        
         1.upto(12).each do |draw|
           fifo = Bio::Gadgets.mkfifo('strt.depth', 'fq1l')
           fp0 = open("| #{cPfx0}wc -l #{fifo}")
           fp1 = open(<<CMD
-| LC_ALL=C unpigz -c #{fqgzs.join(' ')} \
-| fq1l cnv #{cPfx} \
+| LC_ALL=C cat #{tmpfiles.join(' ')} \
 | fq1l to #{draw} #{12-draw} \
 | #{cPfx0}tee #{fifo} \
 | fq1l nr #{bSize} #{cPfx} #{par} \
