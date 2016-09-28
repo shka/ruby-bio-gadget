@@ -23,7 +23,7 @@ module Bio
 
     #
 
-    option_buffer_size = [
+    OPT_BUFFER_SIZE = [
       :buffer_size, {
         :aliases => '-S',
         :banner => 'SIZE',
@@ -32,7 +32,7 @@ module Bio
       }
     ]
     
-    option_parallel = [
+    OPT_PARALLEL = [
       :parallel, {
         :aliases => '-p',
         :banner => 'N',
@@ -46,7 +46,7 @@ module Bio
       }
     ]
 
-    option_prefix_coreutils = [
+    OPT_PREFIX_COREUTILS = [
       :prefix_coreutils, {
         :banner => 'PREFIX',
         :default => system('which gnproc >/dev/null 2>&1') ? 'g' : '',
@@ -55,14 +55,23 @@ module Bio
       }
     ]
 
+    OPT_PREFIX_GREP = [
+      :prefix_grep, {
+        :banner => 'PREFIX',
+        :default => system('which ggrep >/dev/null 2>&1') ? 'g' : '',
+        :desc => 'A prefix character for GNU grep',
+        :type => :string
+      }
+    ]
+    
     #
     
     desc 'find PATTERN [NAME]',
          'Find fragments matching with regexp PATTERN from FASTA-format STDIN'
-
-    method_option *option_buffer_size
-    method_option *option_parallel
-    method_option *option_prefix_coreutils
+    
+    method_option *OPT_BUFFER_SIZE
+    method_option *OPT_PARALLEL
+    method_option *OPT_PREFIX_COREUTILS
 
     method_option :ignore_case,
                   default: true,
@@ -127,8 +136,8 @@ module Bio
     desc 'gap BEDgz1 BEDgz2',
          "Calculate gap distances from 5'-end of fragments 1 to 3'-end of fragments 2"
 
-    method_option *option_parallel
-    method_option *option_prefix_coreutils
+    method_option *OPT_PARALLEL
+    method_option *OPT_PREFIX_COREUTILS
 
     method_option :minimum_gap,
                   default: -2000,
