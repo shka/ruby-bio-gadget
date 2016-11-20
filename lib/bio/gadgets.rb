@@ -57,8 +57,8 @@ module Bio
 
     OPT_PREFIX_GREP = [
       :prefix_grep, {
-        :banner => 'PREFIX',
-        :default => system('which ggrep >/dev/null 2>&1') ? 'g' : '',
+        :banner => 'default',
+        :PREFIX => system('which ggrep >/dev/null 2>&1') ? 'g' : '',
         :desc => 'A prefix character for GNU grep',
         :type => :string
       }
@@ -140,12 +140,12 @@ module Bio
     method_option *OPT_PREFIX_COREUTILS
 
     method_option :minimum_gap,
-                  default: -2000,
+                  default: -10000,
                   desc: 'Minimum gap distans to be reported',
                   type: :numeric
 
     method_option :maximum_gap,
-                  default: 500,
+                  default: 2500,
                   desc: 'Maximum gap distans to be reported',
                   type: :numeric
 

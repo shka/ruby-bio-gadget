@@ -24,5 +24,5 @@ Gem::Specification.new do |gem|
   gem.add_dependency 'damerau-levenshtein'
   gem.add_dependency 'mkfifo'
   gem.add_dependency 'parallel'
-  gem.add_dependency 'thor'
+  gem.add_dependency 'qthor' 
 end
