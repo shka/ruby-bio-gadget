@@ -6,11 +6,7 @@ module Bio
       
       desc 'nr', 'Extract non-redundant best-quality sequences, esp. for UMI'
 
-      method_option :buffer_size,
-                    aliases: '-S',
-                    banner: 'SIZE',
-                    desc: 'Use SIZE for main memory buffer',
-                    type: :string
+      method_option *Bio::Gadgets::OPT_BUFFER_SIZE
 
       method_option :degenerated_mode,
                     default: false,

@@ -22,11 +22,7 @@ module Bio
                     desc: 'Maximum distance between barcode and sequence',
                     type: :numeric
 
-      method_option :buffer_size,
-                    banner: 'SIZE',
-                    aliases: '-S',
-                    desc: 'Use SIZE for main memory buffer',
-                    type: :string
+      method_option *Bio::Gadgets::OPT_BUFFER_SIZE
       
       method_option :prefix_coreutils,
                     banner: 'PREFIX',

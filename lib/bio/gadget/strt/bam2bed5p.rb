@@ -4,11 +4,7 @@ module Bio
 
       desc 'bam2bed5p BAM', "Convert bam to bed of 5'-end of alignments"
 
-      method_option :buffer_size,
-                    aliases: '-S',
-                    banner: 'SIZE',
-                    desc: 'Use SIZE for main memory buffer',
-                    type: :string
+      method_option *Bio::Gadgets::OPT_BUFFER_SIZE
 
       method_option :minimum_quality,
                     default: 14,

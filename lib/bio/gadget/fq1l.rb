@@ -14,14 +14,28 @@ module Bio
 
       # fq1l:convert
       
-      desc 'convert', 'Filter command - convert fastq from 4 lines/read to 1 line/read.'
+      desc 'convert', '(filter) convert fastq from 4 lines/read to 1 line/read'
 
       method_option *Bio::Gadgets::OPT_PREFIX_COREUTILS
       
       def convert
+        exit unless STDIN.wait
         exec "#{options.prefix_coreutils}paste - - - -"
       end
 
+      # fq1l:sort
+
+      desc 'sort', '(filter) sort by sequences and the qualities'
+
+      method_option *Bio::Gadgets::OPT_PREFIX_COREUTILS
+      method_option *Bio::Gadgets::OPT_PARALLEL
+      method_option *Bio::Gadgets::OPT_BUFFER_SIZE
+
+      def sort
+        exit unless STDIN.wait
+        exec "#{options.prefix_coreutils}sort -t '\t' --parallel=#{options.parallel} -r -k2,4 #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}"
+      end
+      
       #
 
       no_commands do
