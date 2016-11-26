@@ -42,7 +42,7 @@ module Bio
           Bio::Gadgets.getTmpname('strt.depth', 'fq1l')
         end
         tsscmd =
-          options.tss ? "fq1l mt5 --minimum-length=#{mLen} #{match}+ | #{cPfx0}cut -f 2 | #{cPfx0}sort #{bSize} #{par} -u |" : ''
+          options.tss ? "fq1l mt5 --minimum-length=#{mLen} #{match}+ | #{cPfx0}cut -f 2 | #{Bio::Gadgets.sortCommand(options)} -u |" : ''
         indexes = Array.new(fqgzs.length) { |i| i }
         Parallel.each(indexes, in_threads: options.parallel) do |i|
           system "gunzip -c #{fqgzs[i]} | fq1l convert #{cPfx} > #{tmpfiles[i]}"

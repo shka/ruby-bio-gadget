@@ -25,7 +25,7 @@ module Bio
 
       # fq1l:sort
 
-      desc 'sort', '(filter) sort by sequences and the qualities'
+      desc 'sort', '(filter) sort by sequences and the qualities in descending order'
 
       method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
       method_option *Bio::Gadgets::OPT_BUFFER_SIZE
@@ -33,7 +33,7 @@ module Bio
 
       def sort
         exit unless STDIN.wait
-        exec "#{options.coreutils_prefix}sort -t '\t' --parallel=#{options.parallel} -r -k2,4 #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}"
+        exec "#{Bio::Gadgets.sortCommand(options)} -t '\t' -r -k2,4"
       end
       
       #
@@ -46,9 +46,9 @@ module Bio
             bc, well = line.rstrip.split(',')
             bcs[bc] = well
           end
-          bcs
+          return bcs
         end
-        
+
       end
 
     end

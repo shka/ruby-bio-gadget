@@ -37,7 +37,7 @@ module Bio
         eidx = options.end-1
         bcr = bidx..eidx
         dl = DamerauLevenshtein
-        open("| #{options.coreutils_prefix}sort -t '\t' --parallel=#{options.parallel} -k2.#{options.begin},2.#{options.end} #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}", 'r').each do |line|
+        open("| #{Bio::Gadgets.sortCommand(options)} -t '\t' -k2.#{options.begin},2.#{options.end}", 'r').each do |line|
           acc, seq, sep, qual = line.rstrip.split(/\t/)
           bc = seq[bcr]
           if bc != pbc

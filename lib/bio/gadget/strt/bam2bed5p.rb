@@ -15,11 +15,9 @@ module Bio
       
       def bam2bed5p(bam)
 
-        bSize = options.key?('buffer_size') ? '--buffer-size='+options.buffer_size : ''
-        parallel = "--parallel=#{options.parallel}"
         reSep = /\t/
         
-        fp = open("| #{options.coreutils_prefix}sort #{bSize} #{parallel} -k 1,1 -k 2,2n -k 3,3n -k 4,4", 'w')
+        fp = open("| #{Bio::Gadgets.sortCommand(options)} -t '\t' -k 1,1 -k 2,2n -k 3,3n -k 4,4", 'w')
         open("| samtools view #{bam} -b -q #{options.minimum_quality} | bedtools bamtobed -i stdin").each do |line|
           cols = line.rstrip.split(reSep)
           fp.puts ([cols[0],

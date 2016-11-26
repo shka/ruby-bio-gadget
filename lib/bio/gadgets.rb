@@ -21,6 +21,10 @@ module Bio
       fifo
     end
 
+    def self.sortCommand(options)
+      "#{options.coreutils_prefix}sort --parallel=#{options.parallel} #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}"
+    end
+        
     #
 
     OPT_BUFFER_SIZE = [
