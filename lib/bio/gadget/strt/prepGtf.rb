@@ -10,15 +10,11 @@ module Bio
                     desc: 'Length of promoter',
                     type: :numeric
       
-      method_option :prefix_coreutils,
-                    banner: 'PREFIX',
-                    default: system('which gnproc >/dev/null 2>&1') ? 'g' : '',
-                    desc: 'A prefix character for GNU coreutils',
-                    type: :string
+      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
 
       def prepGtf(xRef, genePred)
 
-        cPrefix = options.prefix_coreutils
+        cPrefix = options.coreutils_prefix
         pLength = options.promoter_size
 
         tid2sym = Hash.new

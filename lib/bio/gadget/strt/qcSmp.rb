@@ -13,12 +13,8 @@ module Bio
                     desc: 'Change the number of sorts run concurrently to N',
                     type: :numeric
       
-      method_option :prefix_coreutils,
-                    banner: 'PREFIX',
-                    default: system('which gnproc >/dev/null 2>&1') ? 'g' : '',
-                    desc: 'A prefix character for GNU coreutils',
-                    type: :string
-      
+      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
+
       method_option :prefix_grep,
                     type: :string,
                     banner: 'PREFIX',
@@ -27,7 +23,7 @@ module Bio
       
       def qcSmp(bam, bed, name, base='./')
 
-        cPrefix = options.prefix_coreutils
+        cPrefix = options.coreutils_prefix
 
         bedtool = 'bedtools intersect -s -nonamecheck -a stdin -b'
         count = "| #{cPrefix}cut -f 4 | #{cPrefix}sort -u | #{cPrefix}wc -l | ruby -nle 'puts $_.lstrip'"

@@ -5,11 +5,7 @@ module Bio
       desc 'prepBed FAI GTF [ANNBASE]',
            'Preprocess annotation files to create bed files at ANNBASE for STRT'
 
-      method_option :prefix_coreutils,
-                    banner: 'PREFIX',
-                    default: system('which gnproc >/dev/null 2>&1') ? 'g' : '',
-                    desc: 'A prefix character for GNU coreutils',
-                    type: :string
+      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
       
       method_option :prefix_grep,
                     type: :string,
@@ -19,7 +15,7 @@ module Bio
 
       def prepBed(fai, gtf, base='./')
 
-        cPrefix = options.prefix_coreutils
+        cPrefix = options.coreutils_prefix
         gPrefix = options.prefix_grep
         reSym = /gene_symbol "([^"]+)/
         reSep = /\t/

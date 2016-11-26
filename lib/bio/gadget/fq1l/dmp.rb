@@ -7,11 +7,7 @@ module Bio
 
       desc 'dmp MAP BASE', 'Dempltiplex (and restore); BASE is a basename of the demultiplexed files'
 
-      method_option :prefix_coreutils,
-                    type: :string,
-                    banner: 'PREFIX',
-                    desc: 'A prefix character for GNU coreutils',
-                    default: system('which gnproc >/dev/null 2>&1') ? 'g' : ''
+      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
 
       method_option :prefix_grep,
                     type: :string,
@@ -32,7 +28,7 @@ module Bio
         p = options.parallel
         system "pigz -p #{p} -c > #{tmpfile}"
         #
-        prefix = options.prefix_coreutils
+        prefix = options.coreutils_prefix
         gprefix = options.prefix_grep
         Parallel.each(bcs.values, in_threads: p) do |well|
           system "unpigz -c #{tmpfile} | #{gprefix}grep -P '^[^\t]+ #{well}\t' | #{prefix}tr \"\\t\" \"\\n\" | pigz -p #{p} -c > #{base}.#{well}.fq.gz"

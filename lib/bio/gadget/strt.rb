@@ -35,8 +35,8 @@ module Bio
         mLength = options.length_minimum
         return [ options.key?('buffer_size') ?
                    '--buffer-size='+options.buffer_size : '',
-                 options.prefix_coreutils == '' ?
-                   '' : "--prefix-coreutils=#{options.prefix_coreutils}",
+                 options.coreutils_prefix == '' ?
+                   '' : "--prefix-coreutils=#{options.coreutils_prefix}",
                  options.prefix_grep == '' ?
                    '' : "--prefix-grep=#{options.prefix_grep}",
                  "--parallel=#{options.parallel}",
@@ -46,7 +46,7 @@ module Bio
                  mLength + uLength + bLength + gLength,
                  uLength,
                  "#{'.' * uLength}#{'.' * bLength}#{'G' * (gLength-1)}",
-                 options.prefix_coreutils ]
+                 options.coreutils_prefix ]
       end
 
     end

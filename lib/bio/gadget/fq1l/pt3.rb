@@ -17,11 +17,7 @@ module Bio
                     desc: 'Minimum length after trimming',
                     type: :numeric
       
-      method_option :prefix_coreutils,
-                    type: :string,
-                    banner: 'PREFIX',
-                    desc: 'A prefix character for GNU coreutils',
-                    default: system('which gnproc >/dev/null 2>&1') ? 'g' : ''
+      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
 
       method_option :prefix_grep,
                     type: :string,
@@ -48,7 +44,7 @@ module Bio
         #
         exit unless STDIN.wait
         #
-        prefix = options.prefix_coreutils
+        prefix = options.coreutils_prefix
         gprefix = options.prefix_grep
         main = ''
         fifos = Array.new

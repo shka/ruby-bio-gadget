@@ -14,15 +14,11 @@ module Bio
                     desc: 'Change the number of sorts run concurrently to N',
                     type: :numeric
       
-      method_option :prefix_coreutils,
-                    banner: 'PREFIX',
-                    default: system('which gnproc >/dev/null 2>&1') ? 'g' : '',
-                    desc: 'A prefix character for GNU coreutils',
-                    type: :string
+      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
 
       def count(smp, base, bed0, *beds)
 
-        cPrefix = options.prefix_coreutils
+        cPrefix = options.coreutils_prefix
         
         smps = Hash.new
         fp = open(smp)

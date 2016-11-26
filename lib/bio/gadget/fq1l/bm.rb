@@ -23,12 +23,7 @@ module Bio
                     type: :numeric
 
       method_option *Bio::Gadgets::OPT_BUFFER_SIZE
-      
-      method_option :prefix_coreutils,
-                    banner: 'PREFIX',
-                    default: system('which gnproc >/dev/null 2>&1') ? 'g' : '',
-                    desc: 'A prefix character for GNU coreutils',
-                    type: :string
+      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
 
       method_option :parallel,
                     aliases: '-p',
@@ -48,7 +43,7 @@ module Bio
         eidx = options.end-1
         bcr = bidx..eidx
         dl = DamerauLevenshtein
-        open("| #{options.prefix_coreutils}sort -t '\t' --parallel=#{options.parallel} -k2.#{options.begin},2.#{options.end} #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}", 'r').each do |line|
+        open("| #{options.coreutils_prefix}sort -t '\t' --parallel=#{options.parallel} -k2.#{options.begin},2.#{options.end} #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}", 'r').each do |line|
           acc, seq, sep, qual = line.rstrip.split(/\t/)
           bc = seq[bcr]
           if bc != pbc

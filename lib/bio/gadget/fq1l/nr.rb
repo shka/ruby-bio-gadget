@@ -7,18 +7,13 @@ module Bio
       desc 'nr', 'Extract non-redundant best-quality sequences, esp. for UMI'
 
       method_option *Bio::Gadgets::OPT_BUFFER_SIZE
+      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
 
       method_option :degenerated_mode,
                     default: false,
                     desc: 'Exclude redundant and shorter sequece',
                     type: :boolean
       
-      method_option :prefix_coreutils,
-                    banner: 'PREFIX',
-                    default: system('which gnproc >/dev/null 2>&1') ? 'g' : '',
-                    desc: 'A prefix character for GNU coreutils',
-                    type: :string
-
       method_option :parallel,
                     aliases: '-p',
                     banner: 'N',
@@ -31,9 +26,9 @@ module Bio
         #
         pseq = ''
         if options.degenerated_mode
-          BioGadget.nr_deg("#{options.prefix_coreutils}sort -t '\t' --parallel=#{options.parallel} -r -k2,2 #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}")
+          BioGadget.nr_deg("#{options.coreutils_prefix}sort -t '\t' --parallel=#{options.parallel} -r -k2,2 #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}")
         else
-          BioGadget.nr_std("#{options.prefix_coreutils}sort -t '\t' --parallel=#{options.parallel} -r -k2,4 #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}")
+          BioGadget.nr_std("#{options.coreutils_prefix}sort -t '\t' --parallel=#{options.parallel} -r -k2,4 #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}")
         end
       end
       

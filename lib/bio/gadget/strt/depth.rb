@@ -9,7 +9,7 @@ module Bio
 
       method_option *Bio::Gadgets::OPT_BUFFER_SIZE
       method_option *Bio::Gadgets::OPT_PARALLEL
-      method_option *Bio::Gadgets::OPT_PREFIX_COREUTILS
+      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
       method_option *Bio::Gadgets::OPT_PREFIX_GREP
 
       method_option *OPT_LENGTH_BARCODE

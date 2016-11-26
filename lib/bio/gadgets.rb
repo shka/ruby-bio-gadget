@@ -46,8 +46,8 @@ module Bio
       }
     ]
 
-    OPT_PREFIX_COREUTILS = [
-      :prefix_coreutils, {
+    OPT_COREUTILS_PREFIX = [
+      :coreutils_prefix, {
         :banner => 'PREFIX',
         :default => system('which gnproc >/dev/null 2>&1') ? 'g' : '',
         :desc => 'A prefix character for GNU coreutils',
@@ -71,7 +71,7 @@ module Bio
     
     method_option *OPT_BUFFER_SIZE
     method_option *OPT_PARALLEL
-    method_option *OPT_PREFIX_COREUTILS
+    method_option *OPT_COREUTILS_PREFIX
 
     method_option :ignore_case,
                   default: true,
@@ -81,7 +81,7 @@ module Bio
     def find(pattern, name0 = '')
 
       bSize = options.key?('buffer_size') ? '--buffer-size='+options.buffer_size : ''
-      cPrefix = options.prefix_coreutils
+      cPrefix = options.coreutils_prefix
       re = Regexp.new("(#{pattern})", options.ignore_case)
       name = name0 == '' ? pattern : name0
       
@@ -137,7 +137,7 @@ module Bio
          "Calculate gap distances from 5'-end of fragments 1 to 3'-end of fragments 2"
 
     method_option *OPT_PARALLEL
-    method_option *OPT_PREFIX_COREUTILS
+    method_option *OPT_COREUTILS_PREFIX
 
     method_option :minimum_gap,
                   default: -10000,
@@ -151,7 +151,7 @@ module Bio
 
     def gap(bedgz1, bedgz2)
 
-      cPrefix = options.prefix_coreutils
+      cPrefix = options.coreutils_prefix
 
       chrs = Hash.new
       open("| unpigz -c #{bedgz1} #{bedgz2} | #{cPrefix}cut -f 1 | #{cPrefix}uniq | #{cPrefix}sort -u").each do |line|

@@ -4,14 +4,10 @@ module Bio
 
       desc 'rst', 'Restore fastq from 1 line/read to 4 lines/read'
       
-      method_option :prefix_coreutils,
-                    type: :string,
-                    banner: 'PREFIX',
-                    desc: 'A prefix character for GNU coreutils',
-                    default: system('which gnproc >/dev/null 2>&1') ? 'g' : ''
+      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
 
       def rst
-        exec "#{options.prefix_coreutils}tr \"\\t\" \"\\n\""
+        exec "#{options.coreutils_prefix}tr \"\\t\" \"\\n\""
       end
       
     end
