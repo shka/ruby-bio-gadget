@@ -24,13 +24,7 @@ module Bio
 
       method_option *Bio::Gadgets::OPT_BUFFER_SIZE
       method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
-
-      method_option :parallel,
-                    aliases: '-p',
-                    banner: 'N',
-                    default: system('which gnproc >/dev/null 2>&1') ? `gnproc`.to_i : (system('which nproc >/dev/null 2>&1') ? `nproc`.to_i : 2),
-                    desc: 'Change the number of sorts run concurrently to N',
-                    type: :numeric
+      method_option *Bio::Gadgets::OPT_PARALLEL
                     
       def bm(map)
         bcs = readBarcodeMap(map)

@@ -8,6 +8,7 @@ module Bio
       desc 'dmp MAP BASE', 'Dempltiplex (and restore); BASE is a basename of the demultiplexed files'
 
       method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
+      method_option *Bio::Gadgets::OPT_PARALLEL
 
       method_option :prefix_grep,
                     type: :string,
@@ -15,13 +16,6 @@ module Bio
                     desc: 'A prefix character for GNU grep',
                     default: system('which ggrep >/dev/null 2>&1') ? 'g' : ''
 
-      method_option :parallel,
-                    aliases: '-p',
-                    banner: 'N',
-                    default: system('which gnproc >/dev/null 2>&1') ? `gnproc`.to_i : (system('which nproc >/dev/null 2>&1') ? `nproc`.to_i : 2),
-                    desc: 'Change the number of sorts run concurrently to N',
-                    type: :numeric
-      
       def dmp(map, base)
         bcs = readBarcodeMap(map)
         tmpfile = Bio::Gadgets.getTmpname('fq1l.dmp', 'fq1l.gz')

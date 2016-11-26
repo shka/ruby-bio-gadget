@@ -28,8 +28,8 @@ module Bio
       desc 'sort', '(filter) sort by sequences and the qualities'
 
       method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
-      method_option *Bio::Gadgets::OPT_PARALLEL
       method_option *Bio::Gadgets::OPT_BUFFER_SIZE
+      method_option *Bio::Gadgets::OPT_PARALLEL
 
       def sort
         exit unless STDIN.wait

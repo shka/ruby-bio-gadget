@@ -36,7 +36,7 @@ module Bio
         return [ options.key?('buffer_size') ?
                    '--buffer-size='+options.buffer_size : '',
                  options.coreutils_prefix == '' ?
-                   '' : "--prefix-coreutils=#{options.coreutils_prefix}",
+                   '' : "--coreutils-prefix=#{options.coreutils_prefix}",
                  options.prefix_grep == '' ?
                    '' : "--prefix-grep=#{options.prefix_grep}",
                  "--parallel=#{options.parallel}",

@@ -7,14 +7,8 @@ module Bio
       desc 'count SMP BASE BED [BED ...]',
            "Count 5'-ends at BASE in each region defined by BEDs"
       
-      method_option :parallel,
-                    aliases: '-p',
-                    banner: 'N',
-                    default: system('which gnproc >/dev/null 2>&1') ? `gnproc`.to_i : (system('which nproc >/dev/null 2>&1') ? `nproc`.to_i : 2),
-                    desc: 'Change the number of sorts run concurrently to N',
-                    type: :numeric
-      
       method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
+      method_option *Bio::Gadgets::OPT_PARALLEL
 
       def count(smp, base, bed0, *beds)
 
