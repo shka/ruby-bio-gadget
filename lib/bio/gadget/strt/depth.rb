@@ -45,7 +45,7 @@ module Bio
           options.tss ? "fq1l mt5 --minimum-length=#{mLen} #{match}+ | #{cPfx0}cut -f 2 | #{cPfx0}sort #{bSize} #{par} -u |" : ''
         indexes = Array.new(fqgzs.length) { |i| i }
         Parallel.each(indexes, in_threads: options.parallel) do |i|
-          system "gunzip -c #{fqgzs[i]} | fq1l cnv #{cPfx} > #{tmpfiles[i]}"
+          system "gunzip -c #{fqgzs[i]} | fq1l convert #{cPfx} > #{tmpfiles[i]}"
         end
         
         1.upto(12).each do |draw|

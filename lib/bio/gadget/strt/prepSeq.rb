@@ -45,7 +45,7 @@ module Bio
         end
         indexes = Array.new(fqgzs.length) { |i| i }
         Parallel.each(indexes, in_threads: options.parallel) do |i|
-          system "gunzip -c #{fqgzs[i]} | fq1l cnv #{cPfx} > #{tmpfiles[i]}"
+          system "gunzip -c #{fqgzs[i]} | fq1l convert #{cPfx} > #{tmpfiles[i]}"
         end
         
         fifos = Array.new(6) { Bio::Gadgets.mkfifo('strt.prepSeq', 'fq1l') }

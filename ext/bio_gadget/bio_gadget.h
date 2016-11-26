@@ -3,6 +3,6 @@
 
 #include "ruby.h"
 
-#define BUFSIZE 512*4
+#define BUFSIZE 65536
 
 #endif /* BIO_GADGET_H */
