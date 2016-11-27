@@ -13,7 +13,7 @@ module Bio
 
       # fq1l:convert
       
-      desc 'convert', '(filter) convert fastq from 4 lines/read to 1 line/read'
+      desc 'convert', '(Filter) Convert fastq from 4 lines/read to 1 line/read'
 
       method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
       
@@ -24,7 +24,7 @@ module Bio
 
       # fq1l:exclude_redundant
 
-      desc 'exclude_duplicate', '(filter) exclude duplicates in the order'
+      desc 'exclude_duplicate', '(Filter) Exclude duplicates in the order'
 
       def exclude_duplicate
         exit unless STDIN.wait
@@ -33,7 +33,7 @@ module Bio
 
       # fq1l:match_5end
 
-      desc 'match_5end PATTERN', '(filter) select sequences that match the 5\'-end with a given PATTERN'
+      desc 'match_5end PATTERN', '(Filter) Select sequences that match the 5\'-end with a given PATTERN'
 
       method_option :invert_match,
                     type: :boolean,
@@ -48,7 +48,7 @@ module Bio
       
       # fq1l:sort
 
-      desc 'sort', '(filter) sort by sequences and the qualities in descending order'
+      desc 'sort', '(Filter) Sort by sequences and the qualities in descending order'
 
       method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
       method_option *Bio::Gadgets::OPT_BUFFER_SIZE
