@@ -1,14 +1,14 @@
 require 'parallel'
 
 module Bio
-  module Gadget
-    class STRT < Thor
+  class Gadget
+    class STRT < Bio::Gadget
 
       desc 'count SMP BASE BED [BED ...]',
            "Count 5'-ends at BASE in each region defined by BEDs"
       
-      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
-      method_option *Bio::Gadgets::OPT_PARALLEL
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_PARALLEL
 
       def count(smp, base, bed0, *beds)
 
@@ -25,7 +25,7 @@ module Bio
         end
         fp.close
 
-        tmpfile = Bio::Gadgets.getTmpname('strt.count', 'bed')
+        tmpfile = getTmpname('strt.count', 'bed')
         system "#{cPrefix}sort -k 1,1 -k 2,2n -k 3,3n -k 4,4 #{bed0} #{beds.join(' ')} > #{tmpfile}"
 
         counts = Hash.new

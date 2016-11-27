@@ -1,6 +1,6 @@
 module Bio
-  module Gadget
-    class STRT < Thor
+  class Gadget
+    class STRT < Bio::Gadget
 
       desc 'prepGtf xRef genePred', 'Preprocess annotation and create gtf from gzipped tables by UCSC'
 
@@ -10,7 +10,7 @@ module Bio
                     desc: 'Length of promoter',
                     type: :numeric
       
-      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
+      method_option *OPT_COREUTILS_PREFIX
 
       def prepGtf(xRef, genePred)
 
@@ -23,13 +23,13 @@ module Bio
           tid2sym[tid] = sym
         end
 
-        tmpfile = Bio::Gadgets::getTmpname('strt.prepGtf', 'gtf')
+        tmpfile = getTmpname('strt.prepGtf', 'gtf')
         system "gunzip -c #{genePred} | #{cPrefix}cut -f 1-10 | genePredToGtf -utr file stdin #{tmpfile}"
 
         reSep = /\t/
         reTid = /transcript_id "([^"]+)/
         tid2exon1 = Hash.new
-        tmpfile2 = Bio::Gadgets::getTmpname('strt.prepGtf', 'gtf')
+        tmpfile2 = getTmpname('strt.prepGtf', 'gtf')
         fp = open(tmpfile2, 'w')
         open(tmpfile).each do |line|
           cols = line.rstrip.split(reSep)

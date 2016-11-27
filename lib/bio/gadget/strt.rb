@@ -1,6 +1,6 @@
 module Bio
-  module Gadget
-    class STRT < Thor
+  class Gadget
+    class STRT < Bio::Gadget
 
       OPT_LENGTH_BARCODE = [ :length_barcode, { :banner => 'NT',
                                                 :default => 6,

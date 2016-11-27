@@ -1,14 +1,14 @@
 require 'parallel'
 
 module Bio
-  module Gadget
-    class STRT < Thor
+  class Gadget
+    class STRT < Bio::Gadget
 
       desc 'qcSmp BAM 5pBED NAME [ANNBASE]', 'Measure for sample quality check'
 
-      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
-      method_option *Bio::Gadgets::OPT_GREP_PREFIX
-      method_option *Bio::Gadgets::OPT_PARALLEL
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_GREP_PREFIX
+      method_option *OPT_PARALLEL
 
       def qcSmp(bam, bed, name, base='./')
 
@@ -28,7 +28,7 @@ module Bio
             "| #{bedtool} #{base}coding_5end.bed" ].map { |cmd| "gunzip -c #{bed} #{cmd} #{count}" }
         commands.unshift "samtools view #{bam} | #{cPrefix}cut -f 1 | #{cPrefix}sort -u | #{cPrefix}wc -l | ruby -nle 'puts $_.lstrip'"
         
-        tmpfiles = Array.new(commands.length) { Bio::Gadgets.getTmpname('strt.qcSmp', 'txt') }
+        tmpfiles = Array.new(commands.length) { getTmpname('strt.qcSmp', 'txt') }
 
         Parallel.map(0.upto(commands.length-1),
                      in_threads: options.parallel) do |i|

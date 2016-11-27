@@ -1,13 +1,13 @@
 module Bio
-  module Gadget
-    class STRT < Thor
+  class Gadget
+    class STRT < Bio::Gadget
 
       desc 'prepSeq MAP BASE FQGZ [FQGZ ...]', 'Preprocess of FQGZs with demuliplex based on MAP and BASE, and also the quality reports'
 
-      method_option *Bio::Gadgets::OPT_BUFFER_SIZE
-      method_option *Bio::Gadgets::OPT_PARALLEL
-      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
-      method_option *Bio::Gadgets::OPT_GREP_PREFIX
+      method_option *OPT_BUFFER_SIZE
+      method_option *OPT_PARALLEL
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_GREP_PREFIX
 
       method_option *OPT_LENGTH_BARCODE
       method_option *OPT_LENGTH_GAP
@@ -41,14 +41,14 @@ module Bio
 
         fqgzs = [fqgz] + fqgzs0
         tmpfiles = Array.new(fqgzs.length) do |i|
-          Bio::Gadgets.getTmpname('strt.depth', 'fq1l')
+          getTmpname('strt.depth', 'fq1l')
         end
         indexes = Array.new(fqgzs.length) { |i| i }
         Parallel.each(indexes, in_threads: options.parallel) do |i|
           system "gunzip -c #{fqgzs[i]} | fq1l convert #{cPfx} > #{tmpfiles[i]}"
         end
         
-        fifos = Array.new(6) { Bio::Gadgets.mkfifo('strt.prepSeq', 'fq1l') }
+        fifos = Array.new(6) { mkfifo('strt.prepSeq', 'fq1l') }
         fifos.each_index do |i|
           Process.fork do
             exec "#{cPfx0}cut -f 2 #{fifos[i]}| ruby -nle 'puts $_.length' | #{cPfx0}sort -n #{par} | #{cPfx0}uniq -c | ruby -nle \"puts \\$_.lstrip.tr(' ',',')\" > #{base}.stat#{i}.csv"

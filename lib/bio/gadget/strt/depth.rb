@@ -1,16 +1,16 @@
 require 'parallel'
 
 module Bio
-  module Gadget
-    class STRT < Thor
+  class Gadget
+    class STRT < Bio::Gadget
 
       desc 'depth FQGZ [FQGZ ...]',
            'Count nonredundant reads according to the sequencing depths'
 
-      method_option *Bio::Gadgets::OPT_BUFFER_SIZE
-      method_option *Bio::Gadgets::OPT_PARALLEL
-      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
-      method_option *Bio::Gadgets::OPT_GREP_PREFIX
+      method_option *OPT_BUFFER_SIZE
+      method_option *OPT_PARALLEL
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_GREP_PREFIX
 
       method_option *OPT_LENGTH_BARCODE
       method_option *OPT_LENGTH_GAP
@@ -39,17 +39,17 @@ module Bio
 
         fqgzs = [fqgz] + fqgzs0
         tmpfiles = Array.new(fqgzs.length) do |i|
-          Bio::Gadgets.getTmpname('strt.depth', 'fq1l')
+          getTmpname('strt.depth', 'fq1l')
         end
         tsscmd =
-          options.tss ? "fq1l mt5 --minimum-length=#{mLen} #{match}+ | #{cPfx0}cut -f 2 | #{Bio::Gadgets.sortCommand(options)} -u |" : ''
+          options.tss ? "fq1l mt5 --minimum-length=#{mLen} #{match}+ | #{cPfx0}cut -f 2 | #{sortCommand(options)} -u |" : ''
         indexes = Array.new(fqgzs.length) { |i| i }
         Parallel.each(indexes, in_threads: options.parallel) do |i|
           system "gunzip -c #{fqgzs[i]} | fq1l convert #{cPfx} > #{tmpfiles[i]}"
         end
         
         1.upto(12).each do |draw|
-          fifo = Bio::Gadgets.mkfifo('strt.depth', 'fq1l')
+          fifo = mkfifo('strt.depth', 'fq1l')
           fp0 = open("| #{cPfx0}wc -l #{fifo}")
           fp1 = open(<<CMD
 | LC_ALL=C cat #{tmpfiles.join(' ')} \

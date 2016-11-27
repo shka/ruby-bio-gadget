@@ -1,6 +1,6 @@
 module Bio
-  module Gadget
-    class Fq1l < Thor
+  class Gadget
+    class Fq1l < Bio::Gadget
       
       desc 'qt3', 'Quality trimming, 3\'-end'
       

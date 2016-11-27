@@ -1,8 +1,8 @@
 require 'io/wait'
 
 module Bio
-  module Gadget
-    class Fq1l < Thor
+  class Gadget
+    class Fq1l < Bio::Gadget
       
       desc 'pt3', 'Primer trimming, 3\'-end'
 
@@ -17,8 +17,8 @@ module Bio
                     desc: 'Minimum length after trimming',
                     type: :numeric
       
-      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
-      method_option *Bio::Gadgets::OPT_GREP_PREFIX
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_GREP_PREFIX
 
       def pt3
         primer = options.primer
@@ -45,8 +45,8 @@ module Bio
         tmpfiles = Array.new
         mlen = options.minimum_length
         fragments.keys.sort.reverse.each do |length|
-          fifo = Bio::Gadgets.mkfifo('fq1l.pt3', 'fq1l', false)
-          tmpfiles << tmpfile = Bio::Gadgets.getTmpname('fq1l.pt3', 'fq1l', false)
+          fifo = mkfifo('fq1l.pt3', 'fq1l', false)
+          tmpfiles << tmpfile = getTmpname('fq1l.pt3', 'fq1l', false)
           if 4**length == fragments[length].size
             main += "#{prefix}cat > #{fifo}"
             Kernel.fork do
@@ -54,9 +54,9 @@ module Bio
             end
           else
             patterns = (fragments[length].map { |fragment| "-e '#{fragment}\t+'" }).join ' '
-            main += "#{prefix}tee #{fifo} | #{Bio::Gadgets.grepCommand(options)} -v #{patterns} | "
+            main += "#{prefix}tee #{fifo} | #{grepCommand(options)} -v #{patterns} | "
             Kernel.fork do
-              BioGadget.pt3(length, "#{Bio::Gadgets.grepCommand(options)} #{patterns} #{fifo}", tmpfile, mlen)
+              BioGadget.pt3(length, "#{grepCommand(options)} #{patterns} #{fifo}", tmpfile, mlen)
             end
           end
           at_exit {

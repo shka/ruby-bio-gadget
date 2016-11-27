@@ -8,8 +8,8 @@ require 'bio/gadget/fq1l/rst'
 require 'bio/gadget/fq1l/to'
 
 module Bio
-  module Gadget
-    class Fq1l < Thor
+  class Gadget
+    class Fq1l < Bio::Gadget
       
       OPT_INVERT_MATCH = [
         :invert_match, {
@@ -22,7 +22,7 @@ module Bio
       
       desc 'convert', '(Filter) Convert fastq from 4 lines/read to 1 line/read'
 
-      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
+      method_option *OPT_COREUTILS_PREFIX
       
       def convert
         exit unless STDIN.wait
@@ -43,11 +43,11 @@ module Bio
       desc 'match_3end PATTERN', '(Filter) Select sequences that match the 3\'-end with a given PATTERN'
 
       method_option *OPT_INVERT_MATCH
-      method_option *Bio::Gadgets::OPT_GREP_PREFIX
+      method_option *OPT_GREP_PREFIX
 
       def match_3end(pattern)
         exit unless STDIN.wait
-        exec "#{Bio::Gadgets.grepCommand(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t[^\\t]+#{pattern}\\t'"
+        exec "#{grepCommand(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t[^\\t]+#{pattern}\\t'"
       end
       
       # fq1l:match_5end
@@ -55,24 +55,24 @@ module Bio
       desc 'match_5end PATTERN', '(Filter) Select sequences that match the 5\'-end with a given PATTERN'
 
       method_option *OPT_INVERT_MATCH
-      method_option *Bio::Gadgets::OPT_GREP_PREFIX
+      method_option *OPT_GREP_PREFIX
 
       def match_5end(pattern)
         exit unless STDIN.wait
-        exec "#{Bio::Gadgets.grepCommand(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t#{pattern}'"
+        exec "#{grepCommand(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t#{pattern}'"
       end
       
       # fq1l:sort
 
       desc 'sort', '(Filter) Sort by sequences and the qualities in descending order'
 
-      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
-      method_option *Bio::Gadgets::OPT_BUFFER_SIZE
-      method_option *Bio::Gadgets::OPT_PARALLEL
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_BUFFER_SIZE
+      method_option *OPT_PARALLEL
 
       def sort
         exit unless STDIN.wait
-        exec "#{Bio::Gadgets.sortCommand(options)} -t '\t' -r -k2,4"
+        exec "#{sortCommand(options)} -t '\t' -r -k2,4"
       end
       
       #

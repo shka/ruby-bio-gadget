@@ -1,14 +1,14 @@
 require 'io/wait'
 
 module Bio
-  module Gadget
-    class Fq1l < Thor
+  class Gadget
+    class Fq1l < Bio::Gadget
       
       desc 'nr', 'Extract non-redundant best-quality sequences, esp. for UMI'
 
-      method_option *Bio::Gadgets::OPT_BUFFER_SIZE
-      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
-      method_option *Bio::Gadgets::OPT_PARALLEL
+      method_option *OPT_BUFFER_SIZE
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_PARALLEL
 
       method_option :degenerated_mode,
                     default: false,

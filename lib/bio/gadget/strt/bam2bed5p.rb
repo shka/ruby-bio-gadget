@@ -1,12 +1,12 @@
 module Bio
-  module Gadget
-    class STRT < Thor
+  class Gadget
+    class STRT < Bio::Gadget
 
       desc 'bam2bed5p BAM', "Convert bam to bed of 5'-end of alignments"
 
-      method_option *Bio::Gadgets::OPT_BUFFER_SIZE
-      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
-      method_option *Bio::Gadgets::OPT_PARALLEL
+      method_option *OPT_BUFFER_SIZE
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_PARALLEL
 
       method_option :minimum_quality,
                     default: 14,
@@ -17,7 +17,7 @@ module Bio
 
         reSep = /\t/
         
-        fp = open("| #{Bio::Gadgets.sortCommand(options)} -t '\t' -k 1,1 -k 2,2n -k 3,3n -k 4,4", 'w')
+        fp = open("| #{sortCommand(options)} -t '\t' -k 1,1 -k 2,2n -k 3,3n -k 4,4", 'w')
         open("| samtools view #{bam} -b -q #{options.minimum_quality} | bedtools bamtobed -i stdin").each do |line|
           cols = line.rstrip.split(reSep)
           fp.puts ([cols[0],

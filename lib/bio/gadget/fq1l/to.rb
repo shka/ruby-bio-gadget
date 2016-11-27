@@ -1,6 +1,6 @@
 module Bio
-  module Gadget
-    class Fq1l < Thor
+  class Gadget
+    class Fq1l < Bio::Gadget
 
       desc 'to DRAW SKIP', 'Thin the sequences out'
 

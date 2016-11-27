@@ -1,12 +1,12 @@
 module Bio
-  module Gadget
-    class STRT < Thor
+  class Gadget
+    class STRT < Bio::Gadget
 
       desc 'prepBed FAI GTF [ANNBASE]',
            'Preprocess annotation files to create bed files at ANNBASE for STRT'
 
-      method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
-      method_option *Bio::Gadgets::OPT_GREP_PREFIX
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_GREP_PREFIX
       
       def prepBed(fai, gtf, base='./')
 

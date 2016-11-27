@@ -1,6 +1,6 @@
 module Bio
-  module Gadget
-    class Fq1l < Thor
+  class Gadget
+    class Fq1l < Bio::Gadget
       
       desc 'mt5 PATTERN', 'Match trimming, 5\'-end'
 
