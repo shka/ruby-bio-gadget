@@ -54,7 +54,7 @@ module Bio
             end
           else
             patterns = (fragments[length].map { |fragment| "-e '#{fragment}\t+'" }).join ' '
-            main += "#{prefix}tee #{fifo} | #{grepCommand(options)} -v #{patterns} | "
+            main += "#{teeCommand(options)} #{fifo} | #{grepCommand(options)} -v #{patterns} | "
             Kernel.fork do
               BioGadget.pt3(length, "#{grepCommand(options)} #{patterns} #{fifo}", tmpfile, mlen)
             end

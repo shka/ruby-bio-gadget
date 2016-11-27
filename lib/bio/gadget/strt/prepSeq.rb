@@ -57,18 +57,18 @@ module Bio
         
         cmd = <<CMD
 LC_ALL=C cat #{tmpfiles.join(' ')} #{options.key?('maximum_reads') ? '| '+cPfx0+'head -n '+options.maximum_reads.to_s : ''} \
-| #{cPfx0}tee #{fifos[0]} \
+| #{teeCommand(options)} #{fifos[0]} \
 | fq1l nr #{bSize} #{cPfx} #{par} \
-| #{cPfx0}tee #{fifos[1]} \
+| #{teeCommand(options)} #{fifos[1]} \
 | fq1l m5 #{gPfx} #{match} \
 | fq1l m5 #{gPfx} --invert-match '[^\\t]*N' \
-| #{cPfx0}tee #{fifos[2]} \
+| #{teeCommand(options)} #{fifos[2]} \
 | fq1l qt3 --low-qualities='#{options.low_qualities}' --minimum-length=#{pLen} \
-| #{cPfx0}tee #{fifos[3]} \
+| #{teeCommand(options)} #{fifos[3]} \
 | fq1l pt3 --primer=AGATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG --minimum-length=#{pLen} #{cPfx} #{gPfx} \
-| #{cPfx0}tee #{fifos[4]} \
+| #{teeCommand(options)} #{fifos[4]} \
 | fq1l nr #{bSize} --degenerated-mode #{cPfx} #{par} \
-| #{cPfx0}tee #{fifos[5]} \
+| #{teeCommand(options)} #{fifos[5]} \
 | fq1l bm --begin=#{uLen+1} --end=#{uLen+bLen} --maximum-distance=#{options.maximum_distance} #{bSize} #{cPfx} #{par} #{map} \
 | fq1l mt5 --minimum-length=#{mLen} #{match}+ \
 | fq1l dmp #{cPfx} #{gPfx} #{par} #{map} #{base} \

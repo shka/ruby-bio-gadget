@@ -54,7 +54,7 @@ module Bio
           fp1 = open(<<CMD
 | LC_ALL=C cat #{tmpfiles.join(' ')} \
 | fq1l to #{draw} #{12-draw} \
-| #{cPfx0}tee #{fifo} \
+| #{teeCommand(options)} #{fifo} \
 | fq1l nr #{bSize} #{cPfx} #{par} \
 | fq1l m5 #{gPfx} #{match} \
 | fq1l m5 #{gPfx} --invert-match '[^\\t]*N' \

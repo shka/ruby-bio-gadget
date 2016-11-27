@@ -70,6 +70,10 @@ module Bio
       "#{options.coreutils_prefix}sort --parallel=#{options.parallel}#{options.key?('buffer_size') ? ' --buffer-size='+options.buffer_size+' ' : ''}"
     end
 
+    def self.teeCommand(options)
+      "#{options.coreutils_prefix}tee"
+    end
+        
   end
 end
 
