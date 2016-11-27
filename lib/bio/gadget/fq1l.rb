@@ -3,7 +3,6 @@ require 'bio/gadget/fq1l/dmp'
 require 'bio/gadget/fq1l/mt5'
 require 'bio/gadget/fq1l/nr'
 require 'bio/gadget/fq1l/pt3'
-require 'bio/gadget/fq1l/qt3'
 require 'bio/gadget/fq1l/rst'
 require 'bio/gadget/fq1l/to'
 
@@ -73,6 +72,26 @@ module Bio
       def sort
         exit unless STDIN.wait
         exec "#{sortCommand(options)} -t '\t' -r -k2,4"
+      end
+
+      # fq1l:trim_3end_quality
+
+      desc 'trim_3end_quality', '(Filter) Trim 3\'-end from a low quality base'
+
+      method_option :low_qualities,
+                    banner: 'CHARACTERS',
+                    default: '!"#',
+                    desc: 'Low quality characters',
+                    type: :string
+      
+      method_option :minimum_length,
+                    banner: 'NT',
+                    default: 40,
+                    desc: 'Minimum length after trimming',
+                    type: :numeric
+
+      def trim_3end_quality
+        BioGadget.t3q(options.low_qualities, options.minimum_length)
       end
       
       #

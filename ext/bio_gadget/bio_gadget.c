@@ -149,7 +149,7 @@ VALUE bio_gadget_fq1l_pt3(vSelf, vLen, vCmdIn, vPathOut, vMinLen)
   return Qnil;
 }
 
-VALUE bio_gadget_fq1l_qt3(vSelf, vLQs, vMinLen)
+VALUE bio_gadget_fq1l_t3q(vSelf, vLQs, vMinLen)
      VALUE vSelf;
      VALUE vLQs;
      VALUE vMinLen;
@@ -219,6 +219,6 @@ Init_bio_gadget(void)
   rb_define_module_function(rb_mBio_Gadget, "nr_deg", bio_gadget_fq1l_nr_deg, 1);
   rb_define_module_function(rb_mBio_Gadget, "nr_std", bio_gadget_fq1l_nr_std, 0);
   rb_define_module_function(rb_mBio_Gadget, "pt3", bio_gadget_fq1l_pt3, 4);
-  rb_define_module_function(rb_mBio_Gadget, "qt3", bio_gadget_fq1l_qt3, 2);
+  rb_define_module_function(rb_mBio_Gadget, "t3q", bio_gadget_fq1l_t3q, 2);
   rb_define_module_function(rb_mBio_Gadget, "to", bio_gadget_fq1l_to, 2);
 }
