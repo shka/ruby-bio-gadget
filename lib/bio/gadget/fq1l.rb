@@ -10,6 +10,13 @@ require 'bio/gadget/fq1l/to'
 module Bio
   module Gadget
     class Fq1l < Thor
+      
+      OPT_INVERT_MATCH = [
+        :invert_match, {
+          :desc => 'The sense of matching',
+          :type => :boolean
+        }
+      ]
 
       # fq1l:convert
       
@@ -35,10 +42,7 @@ module Bio
 
       desc 'match_3end PATTERN', '(Filter) Select sequences that match the 3\'-end with a given PATTERN'
 
-      method_option :invert_match,
-                    type: :boolean,
-                    desc: 'Invert the sense of matching, to select non-matching lines'
-      
+      method_option *OPT_INVERT_MATCH
       method_option *Bio::Gadgets::OPT_GREP_PREFIX
 
       def match_3end(pattern)
@@ -50,10 +54,7 @@ module Bio
 
       desc 'match_5end PATTERN', '(Filter) Select sequences that match the 5\'-end with a given PATTERN'
 
-      method_option :invert_match,
-                    type: :boolean,
-                    desc: 'Invert the sense of matching, to select non-matching lines'
-      
+      method_option *OPT_INVERT_MATCH
       method_option *Bio::Gadgets::OPT_GREP_PREFIX
 
       def match_5end(pattern)
