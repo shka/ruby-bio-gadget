@@ -23,6 +23,15 @@ module Bio
         exec "#{options.coreutils_prefix}paste - - - -"
       end
 
+      # fq1l:exclude_redundant
+
+      desc 'exclude_duplicate', '(filter) exclude duplicates in the order'
+
+      def exclude_duplicate
+        exit unless STDIN.wait
+        BioGadget.nr_std()
+      end
+      
       # fq1l:sort
 
       desc 'sort', '(filter) sort by sequences and the qualities in descending order'

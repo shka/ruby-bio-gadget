@@ -22,7 +22,7 @@ module Bio
     end
 
     def self.sortCommand(options)
-      "#{options.coreutils_prefix}sort --parallel=#{options.parallel} #{options.key?('buffer_size') ? '-S '+options.buffer_size : ''}"
+      "#{options.coreutils_prefix}sort --parallel=#{options.parallel} #{options.key?('buffer_size') ? '--buffer-size='+options.buffer_size+' ' : ''}"
     end
         
     #

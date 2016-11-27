@@ -84,9 +84,8 @@ VALUE bio_gadget_fq1l_nr_deg(vSelf, vCmd)
   return Qnil;
 }
 
-VALUE bio_gadget_fq1l_nr_std(vSelf, vCmd)
+VALUE bio_gadget_fq1l_nr_std(vSelf)
      VALUE vSelf;
-     VALUE vCmd;
 {
   char line[BUFSIZE];
   char *acc;
@@ -94,10 +93,8 @@ VALUE bio_gadget_fq1l_nr_std(vSelf, vCmd)
   char *sep;
   char *qual;
   char pseq[BUFSIZE] = "";
-  FILE *fp;
 
-  fp = popen(StringValueCStr(vCmd), "r");
-  while(fgets(line, BUFSIZE, fp) != NULL) {
+  while(fgets(line, BUFSIZE, stdin) != NULL) {
     acc = strtok(line, "\t");
     seq = strtok(NULL, "\t");
     sep = strtok(NULL, "\t");
@@ -107,7 +104,6 @@ VALUE bio_gadget_fq1l_nr_std(vSelf, vCmd)
       strcpy(pseq, seq);
     }
   }
-  fclose(fp);
   
   return Qnil;
 }
@@ -221,7 +217,7 @@ Init_bio_gadget(void)
   rb_mBio_Gadget = rb_define_module("BioGadget");
   rb_define_module_function(rb_mBio_Gadget, "mt5", bio_gadget_fq1l_mt5, 2);
   rb_define_module_function(rb_mBio_Gadget, "nr_deg", bio_gadget_fq1l_nr_deg, 1);
-  rb_define_module_function(rb_mBio_Gadget, "nr_std", bio_gadget_fq1l_nr_std, 1);
+  rb_define_module_function(rb_mBio_Gadget, "nr_std", bio_gadget_fq1l_nr_std, 0);
   rb_define_module_function(rb_mBio_Gadget, "pt3", bio_gadget_fq1l_pt3, 4);
   rb_define_module_function(rb_mBio_Gadget, "qt3", bio_gadget_fq1l_qt3, 2);
   rb_define_module_function(rb_mBio_Gadget, "to", bio_gadget_fq1l_to, 2);
