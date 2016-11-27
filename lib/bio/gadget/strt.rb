@@ -37,8 +37,8 @@ module Bio
                    '--buffer-size='+options.buffer_size : '',
                  options.coreutils_prefix == '' ?
                    '' : "--coreutils-prefix=#{options.coreutils_prefix}",
-                 options.prefix_grep == '' ?
-                   '' : "--prefix-grep=#{options.prefix_grep}",
+                 options.grep_prefix == '' ?
+                   '' : "--grep-prefix=#{options.grep_prefix}",
                  "--parallel=#{options.parallel}",
                  bLength,
                  gLength,

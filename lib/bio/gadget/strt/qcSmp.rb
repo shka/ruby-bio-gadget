@@ -7,21 +7,16 @@ module Bio
       desc 'qcSmp BAM 5pBED NAME [ANNBASE]', 'Measure for sample quality check'
 
       method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
+      method_option *Bio::Gadgets::OPT_GREP_PREFIX
       method_option *Bio::Gadgets::OPT_PARALLEL
 
-      method_option :prefix_grep,
-                    type: :string,
-                    banner: 'PREFIX',
-                    desc: 'A prefix character for GNU grep',
-                    default: system('which ggrep >/dev/null 2>&1') ? 'g' : ''
-      
       def qcSmp(bam, bed, name, base='./')
 
         cPrefix = options.coreutils_prefix
 
         bedtool = 'bedtools intersect -s -nonamecheck -a stdin -b'
         count = "| #{cPrefix}cut -f 4 | #{cPrefix}sort -u | #{cPrefix}wc -l | ruby -nle 'puts $_.lstrip'"
-        grep = "#{options.prefix_grep}grep"
+        grep = "#{options.grep_prefix}grep"
         
         commands =
           [ '',

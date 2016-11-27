@@ -18,12 +18,7 @@ module Bio
                     type: :numeric
       
       method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
-
-      method_option :prefix_grep,
-                    type: :string,
-                    banner: 'PREFIX',
-                    desc: 'A prefix character for GNU grep',
-                    default: system('which ggrep >/dev/null 2>&1') ? 'g' : ''
+      method_option *Bio::Gadgets::OPT_GREP_PREFIX
 
       def pt3
         primer = options.primer
@@ -45,7 +40,6 @@ module Bio
         exit unless STDIN.wait
         #
         prefix = options.coreutils_prefix
-        gprefix = options.prefix_grep
         main = ''
         fifos = Array.new
         tmpfiles = Array.new
@@ -60,9 +54,9 @@ module Bio
             end
           else
             patterns = (fragments[length].map { |fragment| "-e '#{fragment}\t+'" }).join ' '
-            main += "#{prefix}tee #{fifo} | #{gprefix}grep -v #{patterns} | "
+            main += "#{prefix}tee #{fifo} | #{Bio::Gadgets.grepCommand(options)} -v #{patterns} | "
             Kernel.fork do
-              BioGadget.pt3(length, "#{gprefix}grep #{patterns} #{fifo}", tmpfile, mlen)
+              BioGadget.pt3(length, "#{Bio::Gadgets.grepCommand(options)} #{patterns} #{fifo}", tmpfile, mlen)
             end
           end
           at_exit {

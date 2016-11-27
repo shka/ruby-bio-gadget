@@ -1,6 +1,5 @@
 require 'bio/gadget/fq1l/bm'
 require 'bio/gadget/fq1l/dmp'
-require 'bio/gadget/fq1l/m5'
 require 'bio/gadget/fq1l/mt5'
 require 'bio/gadget/fq1l/nr'
 require 'bio/gadget/fq1l/pt3'
@@ -30,6 +29,21 @@ module Bio
       def exclude_duplicate
         exit unless STDIN.wait
         BioGadget.nr_std()
+      end
+
+      # fq1l:match_5end
+
+      desc 'match_5end PATTERN', '(filter) select sequences that match the 5\'-end with a given PATTERN'
+
+      method_option :invert_match,
+                    type: :boolean,
+                    desc: 'Invert the sense of matching, to select non-matching lines'
+      
+      method_option *Bio::Gadgets::OPT_GREP_PREFIX
+
+      def match_5end(pattern)
+        exit unless STDIN.wait
+        exec "#{Bio::Gadgets.grepCommand(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t#{pattern}'"
       end
       
       # fq1l:sort

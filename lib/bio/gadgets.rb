@@ -21,8 +21,12 @@ module Bio
       fifo
     end
 
+    def self.grepCommand(options)
+      "#{options.grep_prefix}grep"
+    end
+        
     def self.sortCommand(options)
-      "#{options.coreutils_prefix}sort --parallel=#{options.parallel} #{options.key?('buffer_size') ? '--buffer-size='+options.buffer_size+' ' : ''}"
+      "#{options.coreutils_prefix}sort --parallel=#{options.parallel}#{options.key?('buffer_size') ? ' --buffer-size='+options.buffer_size+' ' : ''}"
     end
         
     #
@@ -59,10 +63,10 @@ module Bio
       }
     ]
 
-    OPT_PREFIX_GREP = [
-      :prefix_grep, {
-        :banner => 'default',
-        :PREFIX => system('which ggrep >/dev/null 2>&1') ? 'g' : '',
+    OPT_GREP_PREFIX = [
+      :grep_prefix, {
+        :banner => 'PREFIX',
+        :default => system('which ggrep >/dev/null 2>&1') ? 'g' : '',
         :desc => 'A prefix character for GNU grep',
         :type => :string
       }

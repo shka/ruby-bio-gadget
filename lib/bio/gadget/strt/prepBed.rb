@@ -6,17 +6,12 @@ module Bio
            'Preprocess annotation files to create bed files at ANNBASE for STRT'
 
       method_option *Bio::Gadgets::OPT_COREUTILS_PREFIX
+      method_option *Bio::Gadgets::OPT_GREP_PREFIX
       
-      method_option :prefix_grep,
-                    type: :string,
-                    banner: 'PREFIX',
-                    desc: 'A prefix character for GNU grep',
-                    default: system('which ggrep >/dev/null 2>&1') ? 'g' : ''
-
       def prepBed(fai, gtf, base='./')
 
         cPrefix = options.coreutils_prefix
-        gPrefix = options.prefix_grep
+        gPrefix = options.grep_prefix
         reSym = /gene_symbol "([^"]+)/
         reSep = /\t/
         sortBed = "#{cPrefix}sort -k 1,1 -k 2,2n -k 3,3n -k 4,4"
