@@ -31,6 +31,21 @@ module Bio
         BioGadget.nr_std()
       end
 
+      # fq1l:match_3end
+
+      desc 'match_3end PATTERN', '(Filter) Select sequences that match the 3\'-end with a given PATTERN'
+
+      method_option :invert_match,
+                    type: :boolean,
+                    desc: 'Invert the sense of matching, to select non-matching lines'
+      
+      method_option *Bio::Gadgets::OPT_GREP_PREFIX
+
+      def match_3end(pattern)
+        exit unless STDIN.wait
+        exec "#{Bio::Gadgets.grepCommand(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t[^\\t]+#{pattern}\\t'"
+      end
+      
       # fq1l:match_5end
 
       desc 'match_5end PATTERN', '(Filter) Select sequences that match the 5\'-end with a given PATTERN'
