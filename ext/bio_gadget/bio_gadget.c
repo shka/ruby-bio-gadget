@@ -126,8 +126,8 @@ VALUE bio_gadget_fq1l_t3(vSelf, vCmdIn, vLen, vMinLen, vPathOut)
   FILE *fp_in;
   FILE *fp_out;
 
-  fp_in = popen(StringValueCStr(vCmdIn), "r");
-  fp_out = fopen(StringValueCStr(vPathOut), "w");
+  fp_in = RTEST(vCmdIn) ? popen(StringValueCStr(vCmdIn), "r") : stdin;
+  fp_out = RTEST(vPathOut) ? fopen(StringValueCStr(vPathOut), "w") : stdout;
   len = NUM2INT(vLen);
   minlen = NUM2INT(vMinLen);
   

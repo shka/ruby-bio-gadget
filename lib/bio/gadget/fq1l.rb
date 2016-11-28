@@ -94,11 +94,6 @@ module Bio
       method_option *OPT_GREP_PREFIX
       method_option *OPT_MINIMUM_LENGTH
       
-      # method_option :primer,
-      #               default: 'AGATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG',
-      #               desc: 'Primer sequence that be used for trimming',
-      #               type: :string
-
       method_option :trimmed,
                     banner: 'FILE',
                     desc: 'FILE for trimmed reads; STDOUT if not speficied',
@@ -129,10 +124,59 @@ module Bio
           File.unlink(fifo)
         end
       end
+
+      # fq1l:trim_3end_length
+
+      desc 'trim_3end_length', '(Filter) Trim 3\'-end by a specific length'
+
+      method_option *OPT_MINIMUM_LENGTH
+
+      method_option :trimming_length,
+                    default: 1,
+                    desc: 'Length of the trimming',
+                    type: :numeric
+
+      def trim_3end_length
+        BioGadget.t3(nil, options.trimming_length, options.minimum_length, nil)
+      end
       
+      # # fq1l:trim_3end_primer
+
+      # desc 'trim_3end_primer', '(Filter) Trim 3\'-end from '
+
+      # method_option *OPT_COREUTILS_PREFIX
+      # method_option *OPT_GREP_PREFIX
+      # method_option *OPT_MINIMUM_LENGTH
+
+      # method_option :primer,
+      #               default: 'AGATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG',
+      #               desc: 'Primer sequence that be used for trimming',
+      #               type: :string
+
+      # def trim_3end_primer
+      #   primer = options.primer
+      #   fragments = Hash.new
+      #   max = primer.length-1
+      #   tmp = Hash.new
+      #   for i in 0..max do
+      #     for j in i..max do
+      #       fragment = primer[i..j]
+      #       unless tmp.key?(fragment)
+      #         l = fragment.length
+      #         fragments[l] = Array.new unless fragments.key?(l)
+      #         fragments[l] << fragment
+      #         tmp[fragment] = true
+      #       end
+      #     end
+      #   end
+
+      #   exit unless STDIN.wait
+        
+      # end
+
       # fq1l:trim_3end_quality
 
-      desc 'trim_3end_quality', '(Filter) Trim 3\'-end from a low quality base'
+      desc 'trim_3end_quality', '(Filter) Trim sequences that match the 3\'-end with a given PRIMER'
 
       method_option *OPT_MINIMUM_LENGTH
       
