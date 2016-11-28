@@ -2,7 +2,6 @@ require 'open3'
 require 'bio/gadget/fq1l/bm'
 require 'bio/gadget/fq1l/dmp'
 require 'bio/gadget/fq1l/mt5'
-require 'bio/gadget/fq1l/nr'
 require 'bio/gadget/fq1l/rst'
 require 'bio/gadget/fq1l/to'
 
@@ -37,9 +36,18 @@ module Bio
         exec "#{options.coreutils_prefix}paste - - - -"
       end
 
-      # fq1l:exclude_redundant
+      # fq1l:exclude_degenerate
 
-      desc 'exclude_duplicate', '(Filter) Exclude duplicates in the order'
+      desc 'exclude_degenerate', '(Filter) Exclude degenerated reads in the order'
+
+      def exclude_degenerate
+        exit unless STDIN.wait
+        BioGadget.nr_deg()
+      end
+      
+      # fq1l:exclude_duplicate
+
+      desc 'exclude_duplicate', '(Filter) Exclude duplicated reads in the order'
 
       def exclude_duplicate
         exit unless STDIN.wait
