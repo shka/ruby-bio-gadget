@@ -3,7 +3,6 @@ require 'bio/gadget/fq1l/bm'
 require 'bio/gadget/fq1l/dmp'
 require 'bio/gadget/fq1l/mt5'
 require 'bio/gadget/fq1l/nr'
-require 'bio/gadget/fq1l/pt3'
 require 'bio/gadget/fq1l/rst'
 require 'bio/gadget/fq1l/to'
 
@@ -54,11 +53,8 @@ module Bio
       method_option *OPT_INVERT_MATCH
       method_option *OPT_GREP_PREFIX
 
-      def match_3end(pattern, *files)
-        if files.length == 0
-          exit unless STDIN.wait
-        end
-        exec "#{grep_command(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t[^\\t]+#{pattern}\\t'#{files.length > 0 ? ' '+files.join(' ') : ''}"
+      def match_3end(pattern)
+        exec "#{grep_command(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t[^\\t]*#{pattern}\\t'"
       end
       
       # fq1l:match_5end
@@ -88,7 +84,7 @@ module Bio
 
       # fq1l:trim_3end
 
-      desc 'trim_3nd PATTERN', '(Filter) Trim sequences that match the 3\'-end with a given PATTERN'
+      desc 'trim_3end SEQUENCE', '(Filter) Trim 3\'-end that match with a given SEQUENCE'
 
       method_option *OPT_COREUTILS_PREFIX
       method_option *OPT_GREP_PREFIX
@@ -99,7 +95,7 @@ module Bio
                     desc: 'FILE for trimmed reads; STDOUT if not speficied',
                     type: :string
 
-      def trim_3end(pattern)
+      def trim_3end(sequence)
         exit unless STDIN.wait
         gPrefix = options.key?(:grep_prefix) ? " --grep-prefix=#{options.grep_prefix}" : ''
         fifo = get_fifo('fq1l.trim_3end', 'fq1l', false)
@@ -107,21 +103,23 @@ module Bio
           tmpfile = options.key?(:trimmed) ? File.expand_path(options.trimmed) : get_temporary_path('fq1l.trim_3end', 'fq1l', false)
           begin 
             pid = Process.fork do
-              BioGadget.t3("fq1l match_3end#{gPrefix} #{pattern} #{fifo}", pattern.length, options.minimum_length, tmpfile)
+              BioGadget.t3("fq1l match_3end#{gPrefix} #{sequence} < #{fifo}", sequence.length, options.minimum_length, tmpfile)
             end
-            stats = Open3.pipeline(
-              "#{tee_command(options)} #{fifo}",
-              "fq1l match_3end#{gPrefix} --invert-match #{pattern}")
+            commands = ["#{tee_command(options)} #{fifo}",
+                        "fq1l match_3end#{gPrefix} #{sequence} --invert-match"]
+            stats = Open3.pipeline(*commands)
             Process.waitpid(pid)
-            stats.each_index {|i| raise "Fail at process #{i}; #{stats[i]}" unless stats[i].success? }
+            stats.each_index do |i|
+              raise "Fail at process #{i}; #{stats[i]}; #{commands[i]}" unless stats[i].success?
+            end
           ensure
             unless options.key?(:trimmed)
-              system "cat #{tmpfile}"
-              File.unlink(tmpfile)
+              system "#{cat_command(options)} #{tmpfile}"
+              File.unlink(tmpfile) if File.exist?(tmpfile)
             end
           end
         ensure
-          File.unlink(fifo)
+          File.unlink(fifo) if File.exist?(fifo)
         end
       end
 
@@ -137,46 +135,77 @@ module Bio
                     type: :numeric
 
       def trim_3end_length
+        exit unless STDIN.wait
         BioGadget.t3(nil, options.trimming_length, options.minimum_length, nil)
       end
       
-      # # fq1l:trim_3end_primer
+      # fq1l:trim_3end_primer
 
-      # desc 'trim_3end_primer', '(Filter) Trim 3\'-end from '
+      desc 'trim_3end_primer', '(Filter) Trim 3\'-end that match with a given primer'
 
-      # method_option *OPT_COREUTILS_PREFIX
-      # method_option *OPT_GREP_PREFIX
-      # method_option *OPT_MINIMUM_LENGTH
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_GREP_PREFIX
+      method_option *OPT_MINIMUM_LENGTH
+      method_option *OPT_PARALLEL
 
-      # method_option :primer,
-      #               default: 'AGATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG',
-      #               desc: 'Primer sequence that be used for trimming',
-      #               type: :string
+      method_option :primer,
+                    default: 'AGATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG',
+                    desc: 'Primer sequence that be used for trimming',
+                    type: :string
 
-      # def trim_3end_primer
-      #   primer = options.primer
-      #   fragments = Hash.new
-      #   max = primer.length-1
-      #   tmp = Hash.new
-      #   for i in 0..max do
-      #     for j in i..max do
-      #       fragment = primer[i..j]
-      #       unless tmp.key?(fragment)
-      #         l = fragment.length
-      #         fragments[l] = Array.new unless fragments.key?(l)
-      #         fragments[l] << fragment
-      #         tmp[fragment] = true
-      #       end
-      #     end
-      #   end
+      def trim_3end_primer
 
-      #   exit unless STDIN.wait
+        opt_minimum_length = "--minimum-length=#{options.minimum_length}"
+        primer = options.primer
         
-      # end
+        fragments = Hash.new
+        max = primer.length-1
+        tmp = Hash.new
+        for i in 0..max do
+          for j in i..max do
+            fragment = primer[i..j]
+            unless tmp.key?(fragment)
+              l = fragment.length
+              fragments[l] = Array.new unless fragments.key?(l)
+              fragments[l] << fragment
+              tmp[fragment] = true
+            end
+          end
+        end
+        
+        exit unless STDIN.wait
+
+        tmpfiles = Array.new
+        commands = Array.new
+        pids = Array.new
+        begin 
+          fragments.keys.sort.reverse.each do |length|
+            if 4**length == fragments[length].size
+              commands << "fq1l trim_3end_length --trimming-length=#{length} #{opt_minimum_length}"
+              break
+            else
+              fragments[length].sort.reverse.each do |fragment|
+                tmpfiles << tmpfile = get_temporary_path('fq1l.trim_3end_primer', 'fq1l', false)
+                commands << "fq1l trim_3end#{' --coreutils-prefix='+options.coreutils_prefix if options.key?(:coreutils_prefix)}#{' --grep-prefix='+options.grep_prefix if options.key?(:grep_prefix)} #{opt_minimum_length} --trimmed=#{tmpfile} #{fragment}"
+              end
+            end
+          end
+          stats = pipeline(options.parallel*2, *commands)
+          stats.each_index do |i|
+            raise "Fail at process #{i}; #{stats[i]}; #{commands[i]}" unless stats[i].success?
+          end
+          system "#{cat_command(options)} #{tmpfiles.join(' ')}"
+        ensure
+          tmpfiles.each do |tmpfile|
+            File.unlink(tmpfile) if FileTest.exist?(tmpfile)
+          end
+        end
+        
+      end
 
       # fq1l:trim_3end_quality
 
-      desc 'trim_3end_quality', '(Filter) Trim sequences that match the 3\'-end with a given PRIMER'
+      desc 'trim_3end_quality', '(Filter) Trim 3\'-end from a low quality base'
 
       method_option *OPT_MINIMUM_LENGTH
       
