@@ -17,7 +17,7 @@ module Bio
 
         reSep = /\t/
         
-        fp = open("| #{sortCommand(options)} -t '\t' -k 1,1 -k 2,2n -k 3,3n -k 4,4", 'w')
+        fp = open("| #{sort_command(options)} -t '\t' -k 1,1 -k 2,2n -k 3,3n -k 4,4", 'w')
         open("| samtools view #{bam} -b -q #{options.minimum_quality} | bedtools bamtobed -i stdin").each do |line|
           cols = line.rstrip.split(reSep)
           fp.puts ([cols[0],

@@ -12,16 +12,16 @@ module Bio
       method_option *OPT_PARALLEL
 
       def dmp(map, base)
-        bcs = readBarcodeMap(map)
-        tmpfile = getTmpname('fq1l.dmp', 'fq1l.gz')
+        bcs = read_barcodes(map)
+        tmpfile = get_temporary_path('fq1l.dmp', 'fq1l.gz')
         p = options.parallel
         system "pigz -p #{p} -c > #{tmpfile}"
         #
         prefix = options.coreutils_prefix
         Parallel.each(bcs.values, in_threads: p) do |well|
-          system "unpigz -c #{tmpfile} | #{grepCommand(options)} -P '^[^\t]+ #{well}\t' | #{prefix}tr \"\\t\" \"\\n\" | pigz -p #{p} -c > #{base}.#{well}.fq.gz"
+          system "unpigz -c #{tmpfile} | #{grep_command(options)} -P '^[^\t]+ #{well}\t' | #{prefix}tr \"\\t\" \"\\n\" | pigz -p #{p} -c > #{base}.#{well}.fq.gz"
         end
-        system "unpigz -c #{tmpfile} | #{grepCommand(options)} -P '^[^\t]+ undef\t'"
+        system "unpigz -c #{tmpfile} | #{grep_command(options)} -P '^[^\t]+ undef\t'"
       end
       
     end

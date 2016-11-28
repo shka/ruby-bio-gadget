@@ -39,7 +39,7 @@ module Bio
 
         fqgzs = [fqgz] + fqgzs0
         tmpfiles = Array.new(fqgzs.length) do |i|
-          getTmpname('strt.depth', 'fq1l')
+          get_temporary_path('strt.depth', 'fq1l')
         end
         tsscmd =
           options.tss ? "fq1l mt5 --minimum-length=#{mLen} #{match}+ | #{cPfx0}cut -f 2 | #{sortCommand(options)} -u |" : ''
@@ -49,12 +49,12 @@ module Bio
         end
         
         1.upto(12).each do |draw|
-          fifo = mkfifo('strt.depth', 'fq1l')
+          fifo = get_fifo('strt.depth', 'fq1l')
           fp0 = open("| #{cPfx0}wc -l #{fifo}")
           fp1 = open(<<CMD
 | LC_ALL=C cat #{tmpfiles.join(' ')} \
 | fq1l to #{draw} #{12-draw} \
-| #{teeCommand(options)} #{fifo} \
+| #{tee_command(options)} #{fifo} \
 | fq1l nr #{bSize} #{cPfx} #{par} \
 | fq1l m5 #{gPfx} #{match} \
 | fq1l m5 #{gPfx} --invert-match '[^\\t]*N' \

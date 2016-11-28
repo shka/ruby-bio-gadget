@@ -25,7 +25,7 @@ module Bio
         end
         fp.close
 
-        tmpfile = getTmpname('strt.count', 'bed')
+        tmpfile = get_temporary_path('strt.count', 'bed')
         system "#{cPrefix}sort -k 1,1 -k 2,2n -k 3,3n -k 4,4 #{bed0} #{beds.join(' ')} > #{tmpfile}"
 
         counts = Hash.new

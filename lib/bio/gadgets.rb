@@ -27,7 +27,7 @@ module Bio
       tmpfiles = Array.new
       ff = Bio::FlatFile.open(Bio::FastaFormat, STDIN)
       ff.each do |entry|
-        tmpfiles << tmpfile = Bio::Gadgets.getTmpname('find', 'bed', false)
+        tmpfiles << tmpfile = get_temporary_path('find', 'bed', false)
         acc = entry.entry_id
         seq = entry.seq
         pids << Process.fork do
@@ -101,7 +101,7 @@ module Bio
       reSep = /\t/
       tmpfiles = Hash.new
       chrs.keys.each do |chr|
-        tmpfiles[chr] = Bio::Gadgets.getTmpname('gap', 'csv', false)
+        tmpfiles[chr] = get_temporary_path('gap', 'csv', false)
       end
       Parallel.each(chrs.keys, in_processes: options.parallel) do |chr|
         bed2 = Array.new

@@ -28,7 +28,7 @@ module Bio
             "| #{bedtool} #{base}coding_5end.bed" ].map { |cmd| "gunzip -c #{bed} #{cmd} #{count}" }
         commands.unshift "samtools view #{bam} | #{cPrefix}cut -f 1 | #{cPrefix}sort -u | #{cPrefix}wc -l | ruby -nle 'puts $_.lstrip'"
         
-        tmpfiles = Array.new(commands.length) { getTmpname('strt.qcSmp', 'txt') }
+        tmpfiles = Array.new(commands.length) { get_temporary_path('strt.qcSmp', 'txt') }
 
         Parallel.map(0.upto(commands.length-1),
                      in_threads: options.parallel) do |i|

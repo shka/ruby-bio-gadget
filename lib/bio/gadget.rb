@@ -50,7 +50,7 @@ module Bio
 
     no_commands do
       
-      def getTmpname(prefix, suffix, cleanup=true)
+      def get_temporary_path(prefix, suffix, cleanup=true)
         tmpname = Dir::Tmpname.create(["rbg.#{prefix}.", ".#{suffix}"]) {  }
         if cleanup
           at_exit { File.unlink(tmpname) if FileTest.exist?(tmpname) }
@@ -58,21 +58,21 @@ module Bio
         tmpname
       end
       
-      def mkfifo(prefix, suffix, cleanup=true)
-        fifo = getTmpname("#{prefix}.fifo", suffix, cleanup)
+      def get_fifo(prefix, suffix, cleanup=true)
+        fifo = get_temporary_path("#{prefix}.fifo", suffix, cleanup)
         File.mkfifo(fifo)
         fifo
       end
       
-      def grepCommand(options)
+      def grep_command(options)
         "#{options.grep_prefix}grep"
       end
       
-      def sortCommand(options)
+      def sort_command(options)
         "#{options.coreutils_prefix}sort --parallel=#{options.parallel}#{options.key?('buffer_size') ? ' --buffer-size='+options.buffer_size+' ' : ''}"
       end
       
-      def teeCommand(options)
+      def tee_command(options)
         "#{options.coreutils_prefix}tee"
       end
 

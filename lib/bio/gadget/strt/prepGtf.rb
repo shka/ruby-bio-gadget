@@ -23,13 +23,13 @@ module Bio
           tid2sym[tid] = sym
         end
 
-        tmpfile = getTmpname('strt.prepGtf', 'gtf')
+        tmpfile = get_temporary_path('strt.prepGtf', 'gtf')
         system "gunzip -c #{genePred} | #{cPrefix}cut -f 1-10 | genePredToGtf -utr file stdin #{tmpfile}"
 
         reSep = /\t/
         reTid = /transcript_id "([^"]+)/
         tid2exon1 = Hash.new
-        tmpfile2 = getTmpname('strt.prepGtf', 'gtf')
+        tmpfile2 = get_temporary_path('strt.prepGtf', 'gtf')
         fp = open(tmpfile2, 'w')
         open(tmpfile).each do |line|
           cols = line.rstrip.split(reSep)

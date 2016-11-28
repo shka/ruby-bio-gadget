@@ -41,14 +41,14 @@ module Bio
 
         fqgzs = [fqgz] + fqgzs0
         tmpfiles = Array.new(fqgzs.length) do |i|
-          getTmpname('strt.depth', 'fq1l')
+          get_temporary_path('strt.depth', 'fq1l')
         end
         indexes = Array.new(fqgzs.length) { |i| i }
         Parallel.each(indexes, in_threads: options.parallel) do |i|
           system "gunzip -c #{fqgzs[i]} | fq1l convert #{cPfx} > #{tmpfiles[i]}"
         end
         
-        fifos = Array.new(6) { mkfifo('strt.prepSeq', 'fq1l') }
+        fifos = Array.new(6) { get_fifo('strt.prepSeq', 'fq1l') }
         fifos.each_index do |i|
           Process.fork do
             exec "#{cPfx0}cut -f 2 #{fifos[i]}| ruby -nle 'puts $_.length' | #{cPfx0}sort -n #{par} | #{cPfx0}uniq -c | ruby -nle \"puts \\$_.lstrip.tr(' ',',')\" > #{base}.stat#{i}.csv"
@@ -57,18 +57,18 @@ module Bio
         
         cmd = <<CMD
 LC_ALL=C cat #{tmpfiles.join(' ')} #{options.key?('maximum_reads') ? '| '+cPfx0+'head -n '+options.maximum_reads.to_s : ''} \
-| #{teeCommand(options)} #{fifos[0]} \
+| #{tee_command(options)} #{fifos[0]} \
 | fq1l nr #{bSize} #{cPfx} #{par} \
-| #{teeCommand(options)} #{fifos[1]} \
+| #{tee_command(options)} #{fifos[1]} \
 | fq1l m5 #{gPfx} #{match} \
 | fq1l m5 #{gPfx} --invert-match '[^\\t]*N' \
-| #{teeCommand(options)} #{fifos[2]} \
+| #{tee_command(options)} #{fifos[2]} \
 | fq1l qt3 --low-qualities='#{options.low_qualities}' --minimum-length=#{pLen} \
-| #{teeCommand(options)} #{fifos[3]} \
+| #{tee_command(options)} #{fifos[3]} \
 | fq1l pt3 --primer=AGATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG --minimum-length=#{pLen} #{cPfx} #{gPfx} \
-| #{teeCommand(options)} #{fifos[4]} \
+| #{tee_command(options)} #{fifos[4]} \
 | fq1l nr #{bSize} --degenerated-mode #{cPfx} #{par} \
-| #{teeCommand(options)} #{fifos[5]} \
+| #{tee_command(options)} #{fifos[5]} \
 | fq1l bm --begin=#{uLen+1} --end=#{uLen+bLen} --maximum-distance=#{options.maximum_distance} #{bSize} #{cPfx} #{par} #{map} \
 | fq1l mt5 --minimum-length=#{mLen} #{match}+ \
 | fq1l dmp #{cPfx} #{gPfx} #{par} #{map} #{base} \

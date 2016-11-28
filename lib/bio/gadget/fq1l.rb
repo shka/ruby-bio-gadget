@@ -58,7 +58,7 @@ module Bio
         if files.length == 0
           exit unless STDIN.wait
         end
-        exec "#{grepCommand(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t[^\\t]+#{pattern}\\t'#{files.length > 0 ? ' '+files.join(' ') : ''}"
+        exec "#{grep_command(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t[^\\t]+#{pattern}\\t'#{files.length > 0 ? ' '+files.join(' ') : ''}"
       end
       
       # fq1l:match_5end
@@ -70,7 +70,7 @@ module Bio
 
       def match_5end(pattern)
         exit unless STDIN.wait
-        exec "#{grepCommand(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t#{pattern}'"
+        exec "#{grep_command(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t#{pattern}'"
       end
       
       # fq1l:sort
@@ -83,7 +83,7 @@ module Bio
 
       def sort
         exit unless STDIN.wait
-        exec "#{sortCommand(options)} -t '\t' -r -k2,4"
+        exec "#{sort_command(options)} -t '\t' -r -k2,4"
       end
 
       # fq1l:trim_3end
@@ -107,15 +107,15 @@ module Bio
       def trim_3end(pattern)
         exit unless STDIN.wait
         gPrefix = options.key?(:grep_prefix) ? " --grep-prefix=#{options.grep_prefix}" : ''
-        fifo = mkfifo('fq1l.trim_3end', 'fq1l', false)
+        fifo = get_fifo('fq1l.trim_3end', 'fq1l', false)
         begin
-          tmpfile = options.key?(:trimmed) ? File.expand_path(options.trimmed) : getTmpname('fq1l.trim_3end', 'fq1l', false)
+          tmpfile = options.key?(:trimmed) ? File.expand_path(options.trimmed) : get_temporary_path('fq1l.trim_3end', 'fq1l', false)
           begin 
             pid = Process.fork do
               BioGadget.t3("fq1l match_3end#{gPrefix} #{pattern} #{fifo}", pattern.length, options.minimum_length, tmpfile)
             end
             stats = Open3.pipeline(
-              "#{teeCommand(options)} #{fifo}",
+              "#{tee_command(options)} #{fifo}",
               "fq1l match_3end#{gPrefix} --invert-match #{pattern}")
             Process.waitpid(pid)
             stats.each_index {|i| raise "Fail at process #{i}; #{stats[i]}" unless stats[i].success? }
@@ -150,7 +150,7 @@ module Bio
 
       no_commands do
         
-        def readBarcodeMap(map)
+        def read_barcodes(map)
           bcs = Hash.new
           open(map, 'r').each do |line|
             bc, well = line.rstrip.split(',')

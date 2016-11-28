@@ -27,7 +27,7 @@ module Bio
       method_option *OPT_PARALLEL
                     
       def bm(map)
-        bcs = readBarcodeMap(map)
+        bcs = read_barcodes(map)
         #
         exit unless STDIN.wait
         #
@@ -37,7 +37,7 @@ module Bio
         eidx = options.end-1
         bcr = bidx..eidx
         dl = DamerauLevenshtein
-        open("| #{sortCommand(options)} -t '\t' -k2.#{options.begin},2.#{options.end}", 'r').each do |line|
+        open("| #{sort_command(options)} -t '\t' -k2.#{options.begin},2.#{options.end}", 'r').each do |line|
           acc, seq, sep, qual = line.rstrip.split(/\t/)
           bc = seq[bcr]
           if bc != pbc

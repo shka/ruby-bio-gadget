@@ -45,8 +45,8 @@ module Bio
         tmpfiles = Array.new
         mlen = options.minimum_length
         fragments.keys.sort.reverse.each do |length|
-          fifo = mkfifo('fq1l.pt3', 'fq1l', false)
-          tmpfiles << tmpfile = getTmpname('fq1l.pt3', 'fq1l', false)
+          fifo = get_fifo('fq1l.pt3', 'fq1l', false)
+          tmpfiles << tmpfile = get_temporary_path('fq1l.pt3', 'fq1l', false)
           if 4**length == fragments[length].size
             main += "#{prefix}cat > #{fifo}"
             Kernel.fork do
@@ -54,9 +54,9 @@ module Bio
             end
           else
             patterns = (fragments[length].map { |fragment| "-e '#{fragment}\t+'" }).join ' '
-            main += "#{teeCommand(options)} #{fifo} | #{grepCommand(options)} -v #{patterns} | "
+            main += "#{tee_command(options)} #{fifo} | #{grep_command(options)} -v #{patterns} | "
             Kernel.fork do
-              BioGadget.pt3(length, "#{grepCommand(options)} #{patterns} #{fifo}", tmpfile, mlen)
+              BioGadget.pt3(length, "#{grep_command(options)} #{patterns} #{fifo}", tmpfile, mlen)
             end
           end
           at_exit {
