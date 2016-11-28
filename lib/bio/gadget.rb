@@ -47,33 +47,37 @@ module Bio
     ]
     
     #
-    
-    def self.getTmpname(prefix, suffix, cleanup=true)
-      tmpname = Dir::Tmpname.create(["rbg.#{prefix}.", ".#{suffix}"]) {  }
-      if cleanup
-        at_exit { File.unlink(tmpname) if FileTest.exist?(tmpname) }
+
+    no_commands do
+      
+      def getTmpname(prefix, suffix, cleanup=true)
+        tmpname = Dir::Tmpname.create(["rbg.#{prefix}.", ".#{suffix}"]) {  }
+        if cleanup
+          at_exit { File.unlink(tmpname) if FileTest.exist?(tmpname) }
+        end
+        tmpname
       end
-      tmpname
-    end
+      
+      def mkfifo(prefix, suffix, cleanup=true)
+        fifo = getTmpname("#{prefix}.fifo", suffix, cleanup)
+        File.mkfifo(fifo)
+        fifo
+      end
+      
+      def grepCommand(options)
+        "#{options.grep_prefix}grep"
+      end
+      
+      def sortCommand(options)
+        "#{options.coreutils_prefix}sort --parallel=#{options.parallel}#{options.key?('buffer_size') ? ' --buffer-size='+options.buffer_size+' ' : ''}"
+      end
+      
+      def teeCommand(options)
+        "#{options.coreutils_prefix}tee"
+      end
 
-    def self.mkfifo(prefix, suffix, cleanup=true)
-      fifo = self.getTmpname("#{prefix}.fifo", suffix, cleanup)
-      File.mkfifo(fifo)
-      fifo
     end
-
-    def self.grepCommand(options)
-      "#{options.grep_prefix}grep"
-    end
-        
-    def self.sortCommand(options)
-      "#{options.coreutils_prefix}sort --parallel=#{options.parallel}#{options.key?('buffer_size') ? ' --buffer-size='+options.buffer_size+' ' : ''}"
-    end
-
-    def self.teeCommand(options)
-      "#{options.coreutils_prefix}tee"
-    end
-        
+    
   end
 end
 

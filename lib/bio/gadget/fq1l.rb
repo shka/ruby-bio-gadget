@@ -1,3 +1,4 @@
+require 'open3'
 require 'bio/gadget/fq1l/bm'
 require 'bio/gadget/fq1l/dmp'
 require 'bio/gadget/fq1l/mt5'
@@ -14,6 +15,15 @@ module Bio
         :invert_match, {
           :desc => 'The sense of matching',
           :type => :boolean
+        }
+      ]
+
+      OPT_MINIMUM_LENGTH = [
+        :minimum_length, {
+          :banner => 'NT',
+          :default => 40,
+          :desc => 'Minimum length after trimming',
+          :type => :numeric
         }
       ]
 
@@ -44,9 +54,11 @@ module Bio
       method_option *OPT_INVERT_MATCH
       method_option *OPT_GREP_PREFIX
 
-      def match_3end(pattern)
-        exit unless STDIN.wait
-        exec "#{grepCommand(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t[^\\t]+#{pattern}\\t'"
+      def match_3end(pattern, *files)
+        if files.length == 0
+          exit unless STDIN.wait
+        end
+        exec "#{grepCommand(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t[^\\t]+#{pattern}\\t'#{files.length > 0 ? ' '+files.join(' ') : ''}"
       end
       
       # fq1l:match_5end
@@ -74,22 +86,62 @@ module Bio
         exec "#{sortCommand(options)} -t '\t' -r -k2,4"
       end
 
+      # fq1l:trim_3end
+
+      desc 'trim_3nd PATTERN', '(Filter) Trim sequences that match the 3\'-end with a given PATTERN'
+
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_GREP_PREFIX
+      method_option *OPT_MINIMUM_LENGTH
+      
+      # method_option :primer,
+      #               default: 'AGATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG',
+      #               desc: 'Primer sequence that be used for trimming',
+      #               type: :string
+
+      method_option :trimmed,
+                    banner: 'FILE',
+                    desc: 'FILE for trimmed reads; STDOUT if not speficied',
+                    type: :string
+
+      def trim_3end(pattern)
+        exit unless STDIN.wait
+        gPrefix = options.key?(:grep_prefix) ? " --grep-prefix=#{options.grep_prefix}" : ''
+        fifo = mkfifo('fq1l.trim_3end', 'fq1l', false)
+        begin
+          tmpfile = options.key?(:trimmed) ? File.expand_path(options.trimmed) : getTmpname('fq1l.trim_3end', 'fq1l', false)
+          begin 
+            pid = Process.fork do
+              BioGadget.t3("fq1l match_3end#{gPrefix} #{pattern} #{fifo}", pattern.length, options.minimum_length, tmpfile)
+            end
+            stats = Open3.pipeline(
+              "#{teeCommand(options)} #{fifo}",
+              "fq1l match_3end#{gPrefix} --invert-match #{pattern}")
+            Process.waitpid(pid)
+            stats.each_index {|i| raise "Fail at process #{i}; #{stats[i]}" unless stats[i].success? }
+          ensure
+            unless options.key?(:trimmed)
+              system "cat #{tmpfile}"
+              File.unlink(tmpfile)
+            end
+          end
+        ensure
+          File.unlink(fifo)
+        end
+      end
+      
       # fq1l:trim_3end_quality
 
       desc 'trim_3end_quality', '(Filter) Trim 3\'-end from a low quality base'
 
+      method_option *OPT_MINIMUM_LENGTH
+      
       method_option :low_qualities,
                     banner: 'CHARACTERS',
                     default: '!"#',
                     desc: 'Low quality characters',
                     type: :string
       
-      method_option :minimum_length,
-                    banner: 'NT',
-                    default: 40,
-                    desc: 'Minimum length after trimming',
-                    type: :numeric
-
       def trim_3end_quality
         BioGadget.t3q(options.low_qualities, options.minimum_length)
       end
