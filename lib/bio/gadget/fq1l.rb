@@ -235,6 +235,14 @@ module Bio
         BioGadget.t3q(options.low_qualities, options.minimum_length)
       end
       
+      # fq1l:umi_to_id
+
+      desc 'umi_to_id FIRST LAST', '(Filter) Append UMI to sequence identifier'
+      def umi_to_id(first, last)
+        exit unless STDIN.wait
+        BioGadget.u2i(first.to_i, last.to_i)
+      end
+      
       #
 
       no_commands do
