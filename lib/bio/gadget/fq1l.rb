@@ -135,7 +135,7 @@ module Bio
           end
         ensure
           File.unlink(fifo) if File.exist?(fifo)
-          File.unlink(tmpfile) if File.exist?(tmpfile)
+          File.unlink(tmpfile) if File.exist?(tmpfile) && !options.key?(:trimmed)
         end
       end
 
