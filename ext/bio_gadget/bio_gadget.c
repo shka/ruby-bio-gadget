@@ -4,6 +4,35 @@
 #include <string.h>
 #include "bio_gadget.h"
 
+VALUE bio_gadget_fq1l_i2i(vSelf, vFirst, vLast)
+     VALUE vSelf;
+     VALUE vFirst;
+     VALUE vLast;
+{
+  char line[BUFSIZE];
+  char index[BUFSIZE] = "";
+  char *acc;
+  char *seq;
+  char *sep;
+  char *qual;
+  unsigned long head;
+  unsigned long length;
+
+  head = NUM2INT(vFirst)-1;
+  length = NUM2INT(vLast)-head;
+  while(fgets(line, BUFSIZE, stdin) != NULL) {
+    acc = strtok(line, "\t");
+    seq = strtok(NULL, "\t");
+    sep = strtok(NULL, "\t");
+    qual = strtok(NULL, "\t");
+    strcpy(index, seq+head);
+    index[length] = 0;
+    printf("%s%s\t%s\t%s\t%s", acc, index, seq, sep, qual);
+  }
+
+  return Qnil;
+}
+
 VALUE bio_gadget_fq1l_mt5(vSelf, vPattern, vMinLen)
      VALUE vSelf;
      VALUE vPattern;
@@ -211,6 +240,7 @@ void
 Init_bio_gadget(void)
 {
   rb_mBio_Gadget = rb_define_module("BioGadget");
+  rb_define_module_function(rb_mBio_Gadget, "i2i", bio_gadget_fq1l_i2i, 2);
   rb_define_module_function(rb_mBio_Gadget, "mt5", bio_gadget_fq1l_mt5, 2);
   rb_define_module_function(rb_mBio_Gadget, "nr_deg", bio_gadget_fq1l_nr_deg, 0);
   rb_define_module_function(rb_mBio_Gadget, "nr_std", bio_gadget_fq1l_nr_std, 0);

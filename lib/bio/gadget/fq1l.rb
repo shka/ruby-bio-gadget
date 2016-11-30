@@ -54,6 +54,14 @@ module Bio
         BioGadget.nr_std()
       end
 
+      # fq1l:index_to_id
+
+      desc 'index_to_id FIRST LAST', '(Filter) Append index to sequence identifier'
+      def index_to_id(first, last)
+        exit unless STDIN.wait
+        BioGadget.i2i(first.to_i, last.to_i)
+      end
+      
       # fq1l:match_3end
 
       desc 'match_3end PATTERN', '(Filter) Select sequences that match the 3\'-end with a given PATTERN'
