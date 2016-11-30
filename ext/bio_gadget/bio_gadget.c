@@ -33,45 +33,6 @@ VALUE bio_gadget_fq1l_i2i(vSelf, vFirst, vLast)
   return Qnil;
 }
 
-VALUE bio_gadget_fq1l_mt5(vSelf, vPattern, vMinLen)
-     VALUE vSelf;
-     VALUE vPattern;
-     VALUE vMinLen;
-{
-  char regexs[BUFSIZE];
-  regex_t regexc;
-  unsigned long minlen;
-  char line[BUFSIZE];
-  regmatch_t match[1];
-  char *acc;
-  char *seq;
-  char *sep;
-  char *qual;
-  unsigned long acclen;
-
-  sprintf(regexs, "^[^\t]+\t(%s)", StringValueCStr(vPattern));
-  regcomp(&regexc, regexs, REG_EXTENDED);
-
-  minlen = NUM2INT(vMinLen);
-
-  while(fgets(line, BUFSIZE, stdin) != NULL) {
-    if(regexec(&regexc, line, 1, match, 0) != REG_NOMATCH) {
-      acc = strtok(line, "\t");
-      seq = strtok(NULL, "\t");
-      sep = strtok(NULL, "\t");
-      qual = strtok(NULL, "\t");
-      acclen = strlen(acc);
-      seq += match[0].rm_eo-acclen-1;
-      qual += match[0].rm_eo-acclen-1;
-      if(strlen(seq) >= minlen)
-	printf("%s\t%s\t%s\t%s", acc, seq, sep, qual);
-    }
-  }
-
-  regfree(&regexc);
-  return Qnil;
-}
-
 VALUE bio_gadget_fq1l_nr_deg(vSelf)
      VALUE vSelf;
 {
@@ -209,6 +170,45 @@ VALUE bio_gadget_fq1l_t3q(vSelf, vLQs, vMinLen)
   return Qnil;
 }
 
+VALUE bio_gadget_fq1l_t5(vSelf, vPattern, vMinLen)
+     VALUE vSelf;
+     VALUE vPattern;
+     VALUE vMinLen;
+{
+  char regexs[BUFSIZE];
+  regex_t regexc;
+  unsigned long minlen;
+  char line[BUFSIZE];
+  regmatch_t match[1];
+  char *acc;
+  char *seq;
+  char *sep;
+  char *qual;
+  unsigned long acclen;
+
+  sprintf(regexs, "^[^\t]+\t(%s)", StringValueCStr(vPattern));
+  regcomp(&regexc, regexs, REG_EXTENDED);
+
+  minlen = NUM2INT(vMinLen);
+
+  while(fgets(line, BUFSIZE, stdin) != NULL) {
+    if(regexec(&regexc, line, 1, match, 0) != REG_NOMATCH) {
+      acc = strtok(line, "\t");
+      seq = strtok(NULL, "\t");
+      sep = strtok(NULL, "\t");
+      qual = strtok(NULL, "\t");
+      acclen = strlen(acc);
+      seq += match[0].rm_eo-acclen-1;
+      qual += match[0].rm_eo-acclen-1;
+      if(strlen(seq) >= minlen)
+	printf("%s\t%s\t%s\t%s", acc, seq, sep, qual);
+    }
+  }
+
+  regfree(&regexc);
+  return Qnil;
+}
+
 VALUE bio_gadget_fq1l_to(vSelf, vDraw, vSkip)
      VALUE vSelf;
      VALUE vDraw;
@@ -280,11 +280,11 @@ Init_bio_gadget(void)
 {
   rb_mBio_Gadget = rb_define_module("BioGadget");
   rb_define_module_function(rb_mBio_Gadget, "i2i", bio_gadget_fq1l_i2i, 2);
-  rb_define_module_function(rb_mBio_Gadget, "mt5", bio_gadget_fq1l_mt5, 2);
   rb_define_module_function(rb_mBio_Gadget, "nr_deg", bio_gadget_fq1l_nr_deg, 0);
   rb_define_module_function(rb_mBio_Gadget, "nr_std", bio_gadget_fq1l_nr_std, 0);
   rb_define_module_function(rb_mBio_Gadget, "t3", bio_gadget_fq1l_t3, 4);
   rb_define_module_function(rb_mBio_Gadget, "t3q", bio_gadget_fq1l_t3q, 2);
+  rb_define_module_function(rb_mBio_Gadget, "t5", bio_gadget_fq1l_t5, 2);
   rb_define_module_function(rb_mBio_Gadget, "to", bio_gadget_fq1l_to, 2);
   rb_define_module_function(rb_mBio_Gadget, "u2i", bio_gadget_fq1l_u2i, 2);
 }

@@ -1,7 +1,6 @@
 require 'open3'
 require 'bio/gadget/fq1l/bm'
 require 'bio/gadget/fq1l/dmp'
-require 'bio/gadget/fq1l/mt5'
 require 'bio/gadget/fq1l/rst'
 require 'bio/gadget/fq1l/to'
 
@@ -70,7 +69,9 @@ module Bio
       method_option *OPT_GREP_PREFIX
 
       def match_3end(pattern)
-        exec "#{grep_command(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t[^\\t]*#{pattern}\\t'"
+        exit unless STDIN.wait
+        system "#{grep_command(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t[^\\t]*#{pattern}\\t'"
+        exit $?.to_i == 0 || $?.to_i == 1 ? 0 : $?.to_i
       end
       
       # fq1l:match_5end
@@ -82,7 +83,8 @@ module Bio
 
       def match_5end(pattern)
         exit unless STDIN.wait
-        exec "#{grep_command(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t#{pattern}'"
+        system "#{grep_command(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t#{pattern}'"
+        exit $?.to_i == 0 || $?.to_i == 1 ? 0 : $?.to_i
       end
       
       # fq1l:sort
@@ -129,13 +131,11 @@ module Bio
               raise "Fail at process #{i}; #{stats[i]}; #{commands[i]}" unless stats[i].success?
             end
           ensure
-            unless options.key?(:trimmed)
-              system "#{cat_command(options)} #{tmpfile}"
-              File.unlink(tmpfile) if File.exist?(tmpfile)
-            end
+            system "#{cat_command(options)} #{tmpfile}" unless options.key?(:trimmed)
           end
         ensure
           File.unlink(fifo) if File.exist?(fifo)
+          File.unlink(tmpfile) if File.exist?(tmpfile)
         end
       end
 
@@ -235,6 +235,17 @@ module Bio
         BioGadget.t3q(options.low_qualities, options.minimum_length)
       end
       
+      # fq1l:trim_5end
+
+      desc 'trim_5end PATTERN', '(Filter) Trim 5\'-end that match with a given PATTERN'
+
+      method_option *OPT_MINIMUM_LENGTH
+      
+      def trim_5end(pattern)
+        exit unless STDIN.wait
+        BioGadget.t5(pattern, options.minimum_length)
+      end
+
       # fq1l:umi_to_id
 
       desc 'umi_to_id FIRST LAST', '(Filter) Append UMI to sequence identifier'
