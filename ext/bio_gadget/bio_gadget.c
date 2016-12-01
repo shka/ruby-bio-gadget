@@ -196,8 +196,8 @@ VALUE bio_gadget_fq1l_t5(vSelf, vPattern, vMinLen)
     sep = strtok(NULL, "\t");
     qual = strtok(NULL, "\t");
     if(regexec(&regexc, seq, 1, match, 0) != REG_NOMATCH) {
-      seq += match[0].rm_eo+1;
-      qual += match[0].rm_eo+1;
+      seq += match[0].rm_eo;
+      qual += match[0].rm_eo;
       if(strlen(seq) >= minlen)
 	printf("%s\t%s\t%s\t%s", acc, seq, sep, qual);
     } else
