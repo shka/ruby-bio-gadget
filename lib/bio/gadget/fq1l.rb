@@ -1,7 +1,6 @@
 require 'open3'
 require 'bio/gadget/fq1l/bm'
 require 'bio/gadget/fq1l/dmp'
-require 'bio/gadget/fq1l/rst'
 require 'bio/gadget/fq1l/to'
 
 module Bio
@@ -64,7 +63,7 @@ module Bio
       
       # fq1l:convert
       
-      desc 'convert', '(Filter) Convert fastq from 4 lines/read to 1 line/read'
+      desc 'convert', '(Filter) Convert fastq from 4 lines/read to 1 line/read for this utility'
 
       method_option *OPT_COREUTILS_PREFIX
       
@@ -115,6 +114,17 @@ module Bio
         exit unless STDIN.wait
         system "#{grep_command(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t#{pattern}'"
         exit $?.to_i == 0 || $?.to_i == 1 ? 0 : $?.to_i
+      end
+
+      # fq1l:restore
+
+      desc 'restore', '(Filter) Convert fastq from 1 line/read to 4 lines/read'
+
+      method_option *OPT_COREUTILS_PREFIX
+      
+      def restore
+        exit unless STDIN.wait
+        exec "#{options.coreutils_prefix}tr \"\\t\" \"\\n\""
       end
       
       # fq1l:sort
