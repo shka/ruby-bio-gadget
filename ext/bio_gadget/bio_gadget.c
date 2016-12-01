@@ -184,25 +184,24 @@ VALUE bio_gadget_fq1l_t5(vSelf, vPattern, vMinLen)
   char *seq;
   char *sep;
   char *qual;
-  unsigned long acclen;
 
-  sprintf(regexs, "^[^\t]+\t(%s)", StringValueCStr(vPattern));
+  sprintf(regexs, "^%s", StringValueCStr(vPattern));
   regcomp(&regexc, regexs, REG_EXTENDED);
 
   minlen = NUM2INT(vMinLen);
 
   while(fgets(line, BUFSIZE, stdin) != NULL) {
-    if(regexec(&regexc, line, 1, match, 0) != REG_NOMATCH) {
-      acc = strtok(line, "\t");
-      seq = strtok(NULL, "\t");
-      sep = strtok(NULL, "\t");
-      qual = strtok(NULL, "\t");
-      acclen = strlen(acc);
-      seq += match[0].rm_eo-acclen-1;
-      qual += match[0].rm_eo-acclen-1;
+    acc = strtok(line, "\t");
+    seq = strtok(NULL, "\t");
+    sep = strtok(NULL, "\t");
+    qual = strtok(NULL, "\t");
+    if(regexec(&regexc, seq, 1, match, 0) != REG_NOMATCH) {
+      seq += match[0].rm_eo+1;
+      qual += match[0].rm_eo+1;
       if(strlen(seq) >= minlen)
 	printf("%s\t%s\t%s\t%s", acc, seq, sep, qual);
-    }
+    } else
+      printf("%s\t%s\t%s\t%s", acc, seq, sep, qual);
   }
 
   regfree(&regexc);
