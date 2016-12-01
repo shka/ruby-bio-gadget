@@ -7,7 +7,7 @@ require 'bio/gadget/fq1l/to'
 module Bio
   class Gadget
     class Fq1l < Bio::Gadget
-      
+
       OPT_INVERT_MATCH = [
         :invert_match, {
           :desc => 'The sense of matching',
@@ -24,6 +24,44 @@ module Bio
         }
       ]
 
+      # fq1l:annotate_index
+
+      desc 'annotate_index', '(Filter) Annotate sequence identifier by index sequence at the specified region'
+
+      method_option :first_cycle,
+                    default: 7,
+                    desc: 'The first cycle of index',
+                    type: :numeric
+      
+      method_option :last_cycle,
+                    default: 12,
+                    desc: 'The last cycle of index',
+                    type: :numeric
+      
+      def annotate_index
+        exit unless STDIN.wait
+        BioGadget.i2i(options.first_cycle, options.last_cycle)
+      end
+      
+      # fq1l:annotate_umi
+
+      desc 'annotate_umi', '(Filter) Annotate sequence identifier by UMI sequence at the specified region'
+
+      method_option :first_cycle,
+                    default: 1,
+                    desc: 'The first cycle of UMI',
+                    type: :numeric
+      
+      method_option :last_cycle,
+                    default: 6,
+                    desc: 'The last cycle of UMI',
+                    type: :numeric
+      
+      def annotate_umi
+        exit unless STDIN.wait
+        BioGadget.u2i(options.first_cycle, options.last_cycle)
+      end
+      
       # fq1l:convert
       
       desc 'convert', '(Filter) Convert fastq from 4 lines/read to 1 line/read'
@@ -53,14 +91,6 @@ module Bio
         BioGadget.nr_std()
       end
 
-      # fq1l:index_to_id
-
-      desc 'index_to_id FIRST LAST', '(Filter) Append index to sequence identifier'
-      def index_to_id(first, last)
-        exit unless STDIN.wait
-        BioGadget.i2i(first.to_i, last.to_i)
-      end
-      
       # fq1l:match_3end
 
       desc 'match_3end PATTERN', '(Filter) Select sequences that match the 3\'-end with a given PATTERN'
@@ -89,7 +119,7 @@ module Bio
       
       # fq1l:sort
 
-      desc 'sort', '(Filter) Sort by sequences and the qualities in descending order'
+      desc 'sort', '(Filter) Sort by sequence and the quality in descending order'
 
       method_option *OPT_COREUTILS_PREFIX
       method_option *OPT_BUFFER_SIZE
@@ -100,6 +130,19 @@ module Bio
         exec "#{sort_command(options)} -t '\t' -r -k2,4"
       end
 
+      # fq1l:sort_index
+
+      desc 'sort_index', '(Filter) Sort by index'
+      
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_BUFFER_SIZE
+      method_option *OPT_PARALLEL
+      
+      def sort_index
+        exit unless STDIN.wait
+        exec "#{sort_command(options)} -k2"
+      end
+      
       # fq1l:trim_3end
 
       desc 'trim_3end SEQUENCE', '(Filter) Trim 3\'-end that match with a given SEQUENCE'
@@ -239,21 +282,18 @@ module Bio
 
       desc 'trim_5end PATTERN', '(Filter) Trim 5\'-end that match with a given PATTERN'
 
-      method_option *OPT_MINIMUM_LENGTH
+      method_option :minimum_length,
+                    banner: 'NT',
+                    default: 26,
+                    desc: 'Minimum length after trimming',
+                    type: :numeric
+                      
       
       def trim_5end(pattern)
         exit unless STDIN.wait
         BioGadget.t5(pattern, options.minimum_length)
       end
 
-      # fq1l:umi_to_id
-
-      desc 'umi_to_id FIRST LAST', '(Filter) Append UMI to sequence identifier'
-      def umi_to_id(first, last)
-        exit unless STDIN.wait
-        BioGadget.u2i(first.to_i, last.to_i)
-      end
-      
       #
 
       no_commands do
