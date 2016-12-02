@@ -1,7 +1,6 @@
 require 'damerau-levenshtein'
 require 'io/wait'
 require 'open3'
-require 'bio/gadget/fq1l/to'
 
 module Bio
   class Gadget
@@ -25,7 +24,7 @@ module Bio
 
       # fq1l:annotate_index
 
-      desc 'annotate_index', '(Filter) Annotate sequence identifier by index sequence at the specified region'
+      desc 'annotate_index', 'Annotate sequence identifier by index sequence at the specified region'
 
       method_option :first_cycle,
                     default: 7,
@@ -44,7 +43,7 @@ module Bio
       
       # fq1l:annotate_umi
 
-      desc 'annotate_umi', '(Filter) Annotate sequence identifier by UMI sequence at the specified region'
+      desc 'annotate_umi', 'Annotate sequence identifier by UMI sequence at the specified region'
 
       method_option :first_cycle,
                     default: 1,
@@ -63,7 +62,7 @@ module Bio
       
       # fq1l:convert
       
-      desc 'convert', '(Filter) Convert fastq from 4 lines/read to 1 line/read for this utility'
+      desc 'convert', 'Convert fastq from 4 lines/read to 1 line/read for this utility'
 
       method_option *OPT_COREUTILS_PREFIX
       
@@ -74,7 +73,7 @@ module Bio
 
       # fq1l:demultiplex
 
-      desc 'demultiplex MAP BASE', '(Filter) Demultiplex based on a barcode MAP, and restore sequence files with BASE names'
+      desc 'demultiplex MAP BASE', 'Demultiplex based on a barcode MAP, and restore sequence files with BASE names'
 
       method_option :maximum_distance,
                     default: 1,
@@ -131,7 +130,7 @@ module Bio
       
       # fq1l:exclude_degenerate
 
-      desc 'exclude_degenerate', '(Filter) Exclude degenerated reads in the order'
+      desc 'exclude_degenerate', 'Exclude degenerated reads in the order'
 
       def exclude_degenerate
         exit unless STDIN.wait
@@ -140,7 +139,7 @@ module Bio
       
       # fq1l:exclude_duplicate
 
-      desc 'exclude_duplicate', '(Filter) Exclude duplicated reads in the order'
+      desc 'exclude_duplicate', 'Exclude duplicated reads in the order'
 
       def exclude_duplicate
         exit unless STDIN.wait
@@ -149,7 +148,7 @@ module Bio
 
       # fq1l:match_3end
 
-      desc 'match_3end PATTERN', '(Filter) Select sequences that match the 3\'-end with a given PATTERN'
+      desc 'match_3end PATTERN', 'Select sequences that match the 3\'-end with a given PATTERN'
 
       method_option *OPT_INVERT_MATCH
       method_option *OPT_GREP_PREFIX
@@ -162,7 +161,7 @@ module Bio
       
       # fq1l:match_5end
 
-      desc 'match_5end PATTERN', '(Filter) Select sequences that match the 5\'-end with a given PATTERN'
+      desc 'match_5end PATTERN', 'Select sequences that match the 5\'-end with a given PATTERN'
 
       method_option *OPT_INVERT_MATCH
       method_option *OPT_GREP_PREFIX
@@ -175,7 +174,7 @@ module Bio
 
       # fq1l:restore
 
-      desc 'restore', '(Filter) Convert fastq from 1 line/read to 4 lines/read'
+      desc 'restore', 'Convert fastq from 1 line/read to 4 lines/read'
 
       method_option *OPT_COREUTILS_PREFIX
       
@@ -186,7 +185,7 @@ module Bio
       
       # fq1l:sort
 
-      desc 'sort', '(Filter) Sort by sequence and the quality in descending order'
+      desc 'sort', 'Sort by sequence and the quality in descending order'
 
       method_option *OPT_COREUTILS_PREFIX
       method_option *OPT_BUFFER_SIZE
@@ -199,7 +198,7 @@ module Bio
 
       # fq1l:sort_index
 
-      desc 'sort_index', '(Filter) Sort by index'
+      desc 'sort_index', 'Sort by index'
       
       method_option *OPT_COREUTILS_PREFIX
       method_option *OPT_BUFFER_SIZE
@@ -210,9 +209,18 @@ module Bio
         exec "#{sort_command(options)} -k2"
       end
       
+      # fq1l:thin_out
+
+      desc 'thin_out DRAW SKIP', 'Thin out the sequences'
+
+      def to(draw, skip)
+        exit unless STDIN.wait
+        BioGadget.to(draw.to_i, skip.to_i)
+      end
+      
       # fq1l:trim_3end
 
-      desc 'trim_3end SEQUENCE', '(Filter) Trim 3\'-end that match with a given SEQUENCE'
+      desc 'trim_3end SEQUENCE', 'Trim 3\'-end that match with a given SEQUENCE'
 
       method_option *OPT_COREUTILS_PREFIX
       method_option *OPT_GREP_PREFIX
@@ -251,7 +259,7 @@ module Bio
 
       # fq1l:trim_3end_length
 
-      desc 'trim_3end_length', '(Filter) Trim 3\'-end by a specific length'
+      desc 'trim_3end_length', 'Trim 3\'-end by a specific length'
 
       method_option *OPT_MINIMUM_LENGTH
 
@@ -267,7 +275,7 @@ module Bio
       
       # fq1l:trim_3end_primer
 
-      desc 'trim_3end_primer', '(Filter) Trim 3\'-end that match with a given primer'
+      desc 'trim_3end_primer', 'Trim 3\'-end that match with a given primer'
 
       method_option *OPT_COREUTILS_PREFIX
       method_option *OPT_GREP_PREFIX
@@ -331,7 +339,7 @@ module Bio
 
       # fq1l:trim_3end_quality
 
-      desc 'trim_3end_quality', '(Filter) Trim 3\'-end from a low quality base'
+      desc 'trim_3end_quality', 'Trim 3\'-end from a low quality base'
 
       method_option *OPT_MINIMUM_LENGTH
       
@@ -347,7 +355,7 @@ module Bio
       
       # fq1l:trim_5end
 
-      desc 'trim_5end PATTERN', '(Filter) Trim 5\'-end that match with a given PATTERN'
+      desc 'trim_5end PATTERN', 'Trim 5\'-end that match with a given PATTERN'
 
       method_option :minimum_length,
                     banner: 'NT',
