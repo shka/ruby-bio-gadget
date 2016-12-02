@@ -1,6 +1,6 @@
+require 'damerau-levenshtein'
+require 'io/wait'
 require 'open3'
-require 'bio/gadget/fq1l/bm'
-require 'bio/gadget/fq1l/dmp'
 require 'bio/gadget/fq1l/to'
 
 module Bio
@@ -72,6 +72,63 @@ module Bio
         exec "#{options.coreutils_prefix}paste - - - -"
       end
 
+      # fq1l:demultiplex
+
+      desc 'demultiplex MAP BASE', '(Filter) Demultiplex based on a barcode MAP, and restore sequence files with BASE names'
+
+      method_option :maximum_distance,
+                    default: 1,
+                    desc: 'Maximum distance between barcode and sequence',
+                    type: :numeric
+
+      def demultiplex(map, base)
+        
+        bcs = Hash.new
+        open(map, 'r').each do |line|
+          bc, well = line.rstrip.split(',')
+          bcs[bc] = IO.popen("pigz -c > #{base}.#{well}.fq.gz", 'w:BINARY')
+          bcs[bc].sync = false
+        end
+        na = IO.popen("pigz -c > #{base}.NA.fq.gz", 'w:BINARY')
+        na.sync = false
+        bcl = bcs.keys.map!{|key| key.length}.sort.uniq[0]
+
+        dl = DamerauLevenshtein
+
+        exit unless STDIN.wait
+
+        STDERR.puts na.sync
+        STDERR.puts STDOUT.sync
+        
+        fp = na
+        pbc = nil
+        STDIN.set_encoding('BINARY').each do |line|
+          acc, seq, sep, qual = line.rstrip.split(/\t/)
+          bc = acc[-bcl, bcl]
+          if bc != pbc
+            mindist = options.maximum_distance+1
+            minbc = nil
+            bcs.each_key do |key|
+              dist = dl.distance(key, bc, 0, options.maximum_distance)
+              if dist < mindist
+                mindist = dist
+                minbc = key
+              end
+              break if dist == 0
+            end
+            fp = mindist <= options.maximum_distance ? bcs[minbc] : na
+            pbc = bc
+          end
+          fp.puts "#{acc}\n#{seq}\n#{sep}\n#{qual}"
+        end
+
+        bcs.each_value do |fp|
+          fp.close
+        end
+        na.close
+        
+      end
+      
       # fq1l:exclude_degenerate
 
       desc 'exclude_degenerate', '(Filter) Exclude degenerated reads in the order'
@@ -302,21 +359,6 @@ module Bio
       def trim_5end(pattern)
         exit unless STDIN.wait
         BioGadget.t5(pattern, options.minimum_length)
-      end
-
-      #
-
-      no_commands do
-        
-        def read_barcodes(map)
-          bcs = Hash.new
-          open(map, 'r').each do |line|
-            bc, well = line.rstrip.split(',')
-            bcs[bc] = well
-          end
-          return bcs
-        end
-
       end
 
     end
