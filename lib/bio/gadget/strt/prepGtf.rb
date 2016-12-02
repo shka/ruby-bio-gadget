@@ -1,6 +1,6 @@
 module Bio
   class Gadget
-    class STRT < Bio::Gadget
+    class Strt < Bio::Gadget
 
       desc 'prepGtf xRef genePred', 'Preprocess annotation and create gtf from gzipped tables by UCSC'
 

@@ -1,6 +1,6 @@
 module Bio
   class Gadget
-    class STRT < Bio::Gadget
+    class Strt < Bio::Gadget
 
       desc 'bam2bed5p BAM', "Convert bam to bed of 5'-end of alignments"
 

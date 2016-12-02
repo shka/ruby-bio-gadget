@@ -1,6 +1,6 @@
 module Bio
   class Gadget
-    class STRT < Bio::Gadget
+    class Strt < Bio::Gadget
 
       desc 'prepBed FAI GTF [ANNBASE]',
            'Preprocess annotation files to create bed files at ANNBASE for STRT'

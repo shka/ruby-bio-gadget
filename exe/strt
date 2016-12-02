@@ -2,4 +2,4 @@
 
 require 'bio/gadget'
 
-Bio::Gadget::STRT.start
+Bio::Gadget::Strt.start

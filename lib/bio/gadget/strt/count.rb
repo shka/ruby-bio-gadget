@@ -2,7 +2,7 @@ require 'parallel'
 
 module Bio
   class Gadget
-    class STRT < Bio::Gadget
+    class Strt < Bio::Gadget
 
       desc 'count SMP BASE BED [BED ...]',
            "Count 5'-ends at BASE in each region defined by BEDs"

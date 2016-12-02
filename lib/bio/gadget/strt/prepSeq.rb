@@ -1,6 +1,6 @@
 module Bio
   class Gadget
-    class STRT < Bio::Gadget
+    class Strt < Bio::Gadget
 
       desc 'prepSeq MAP BASE FQGZ [FQGZ ...]', 'Preprocess of FQGZs with demuliplex based on MAP and BASE, and also the quality reports'
 

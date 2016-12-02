@@ -2,7 +2,7 @@ require 'parallel'
 
 module Bio
   class Gadget
-    class STRT < Bio::Gadget
+    class Strt < Bio::Gadget
 
       desc 'qcSmp BAM 5pBED NAME [ANNBASE]', 'Measure for sample quality check'
 

@@ -2,7 +2,7 @@ require 'parallel'
 
 module Bio
   class Gadget
-    class STRT < Bio::Gadget
+    class Strt < Bio::Gadget
 
       desc 'depth FQGZ [FQGZ ...]',
            'Count nonredundant reads according to the sequencing depths'
