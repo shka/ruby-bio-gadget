@@ -94,6 +94,29 @@ VALUE bio_gadget_fq1l_nr_std(vSelf)
   return Qnil;
 }
 
+VALUE bio_gadget_fq1l_slice(vSelf, vNth, vSlice)
+     VALUE vSelf;
+     VALUE vNth;
+     VALUE vSlice;
+{
+  char line[BUFSIZE];
+  unsigned int nth;
+  unsigned int slice;
+  unsigned long count;
+
+  nth = NUM2INT(vNth)-1;
+  slice = NUM2INT(vSlice);
+  count = 0;
+
+  while(fgets(line, BUFSIZE, stdin) != NULL) {
+    if (count % slice == nth)
+      fputs(line, stdout);
+    count += 1;
+  }
+
+  return Qnil;
+}
+
 VALUE bio_gadget_fq1l_t3(vSelf, vCmdIn, vLen, vMinLen, vPathOut)
      VALUE vSelf;
      VALUE vCmdIn;
@@ -281,6 +304,7 @@ Init_bio_gadget(void)
   rb_define_module_function(rb_mBio_Gadget, "i2i", bio_gadget_fq1l_i2i, 2);
   rb_define_module_function(rb_mBio_Gadget, "nr_deg", bio_gadget_fq1l_nr_deg, 0);
   rb_define_module_function(rb_mBio_Gadget, "nr_std", bio_gadget_fq1l_nr_std, 0);
+  rb_define_module_function(rb_mBio_Gadget, "slice", bio_gadget_fq1l_slice, 2);
   rb_define_module_function(rb_mBio_Gadget, "t3", bio_gadget_fq1l_t3, 4);
   rb_define_module_function(rb_mBio_Gadget, "t3q", bio_gadget_fq1l_t3q, 2);
   rb_define_module_function(rb_mBio_Gadget, "t5", bio_gadget_fq1l_t5, 2);

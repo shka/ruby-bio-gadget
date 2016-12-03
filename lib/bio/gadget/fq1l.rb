@@ -73,14 +73,14 @@ module Bio
 
       # fq1l:demultiplex
 
-      desc 'demultiplex MAP BASE', 'Demultiplex based on a barcode MAP, and restore sequence files with BASE names'
+      desc 'demultiplex BASE MAP', 'Demultiplex based on a barcode MAP, and restore sequence files with BASE names'
 
       method_option :maximum_distance,
                     default: 1,
                     desc: 'Maximum distance between barcode and sequence',
                     type: :numeric
 
-      def demultiplex(map, base)
+      def demultiplex(base, map)
         
         bcs = Hash.new
         open(map, 'r').each do |line|
@@ -182,18 +182,31 @@ module Bio
         exit unless STDIN.wait
         exec "#{options.coreutils_prefix}tr \"\\t\" \"\\n\""
       end
+
+      # fq1l:slice
+
+      desc 'slice Nth SLICE', 'Slice the sequences'
+
+      def slice(nth, slice)
+        exit unless STDIN.wait
+        BioGadget.slice(nth.to_i, slice.to_i)
+      end
       
       # fq1l:sort
 
-      desc 'sort', 'Sort by sequence and the quality in descending order'
+      desc 'sort [FQ1Ls]', 'Sort by sequence and the quality in descending order'
 
       method_option *OPT_COREUTILS_PREFIX
       method_option *OPT_BUFFER_SIZE
       method_option *OPT_PARALLEL
 
-      def sort
-        exit unless STDIN.wait
-        exec "#{sort_command(options)} -t '\t' -r -k2,4"
+      def sort(*fq1ls)
+        if fq1ls.size == 0
+          exit unless STDIN.wait
+          exec "#{sort_command(options)} -t '\t' -r -k2,4"
+        else
+          exec "#{sort_command(options)} -t '\t' -r -k2,4 -m #{fq1ls.join(' ')}"
+        end
       end
 
       # fq1l:sort_index
@@ -324,15 +337,13 @@ module Bio
               end
             end
           end
-          stats = pipeline(options.parallel*2, *commands)
+          stats = pipeline(options.parallel*4, *commands)
           stats.each_index do |i|
             raise "Fail at process #{i}; #{stats[i]}; #{commands[i]}" unless stats[i].success?
           end
           system "#{cat_command(options)} #{tmpfiles.join(' ')}"
         ensure
-          tmpfiles.each do |tmpfile|
-            File.unlink(tmpfile) if FileTest.exist?(tmpfile)
-          end
+          unlink_files(tmpfiles)
         end
         
       end
@@ -369,6 +380,40 @@ module Bio
         BioGadget.t5(pattern, options.minimum_length)
       end
 
+      #
+
+      no_commands do
+        
+        def pipeline(parallel, *commands)
+          stats = Array.new
+          tmpfiles = Array.new
+          begin
+            while commands.size > 0
+              cmds = commands.shift(parallel)
+              tmpin = tmpfiles[0]
+              cmds[0] = cmds[0] + " < #{tmpin}" unless tmpin.nil?
+              tmpfiles << tmpout = get_temporary_path('pipeline', 'tmp', false)
+              cmds[-1] = cmds[-1] + " > #{tmpout}" if commands.size > 0
+              tmpstats = Open3.pipeline(*cmds)
+              stats.concat(tmpstats)
+              tmpstats.each do |tmpstat|
+                commands = nil unless tmpstat.success?
+              end
+              unless commands.nil?
+                File.unlink(tmpin) unless tmpin.nil?
+                tmpfiles.shift if tmpfiles.size > 1
+              else
+                break
+              end
+            end
+          ensure
+            unlink_files(tmpfiles)
+          end
+          stats
+        end
+        
+      end
+      
     end
   end
 end

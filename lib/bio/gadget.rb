@@ -53,6 +53,10 @@ module Bio
       def cat_command(options)
         "#{options.coreutils_prefix}cat"
       end
+
+      def coreutils_prefix_option(options)
+         options.key?(:coreutils_prefix) ? " --coreutils-prefix=#{options.coreutils_prefix}" : ''
+      end
       
       def get_temporary_path(prefix, suffix, cleanup=true)
         tmpname = Dir::Tmpname.create(["rbg.#{prefix}.", ".#{suffix}"]) {  }
@@ -71,43 +75,35 @@ module Bio
       def grep_command(options)
         "#{options.grep_prefix}grep"
       end
-      
-      def pipeline(parallel, *commands)
-        stats = Array.new
-        tmpfiles = Array.new
-        begin
-          while commands.size > 0
-            cmds = commands.shift(parallel)
-            tmpin = tmpfiles[0]
-            cmds[0] = cmds[0] + " < #{tmpin}" unless tmpin.nil?
-            tmpfiles << tmpout = get_temporary_path('pipeline', 'tmp', false)
-            cmds[-1] = cmds[-1] + " > #{tmpout}" if commands.size > 0
-            tmpstats = Open3.pipeline(*cmds)
-            stats.concat(tmpstats)
-            tmpstats.each do |tmpstat|
-              commands = nil unless tmpstat.success?
-            end
-            unless commands.nil?
-              File.unlink(tmpin) unless tmpin.nil?
-              tmpfiles.shift if tmpfiles.size > 1
-            else
-              break
-            end
-          end
-        ensure
-          tmpfiles.each do |tmpfile|
-            File.unlink(tmpfile) if File.exist?(tmpfile)
-          end
-        end
-        stats
+
+      def grep_prefix_option(options)
+         options.key?(:grep_prefix) ? " --grep-prefix=#{options.grep_prefix}" : ''
       end
-        
+      
+      def head_command(options)
+        "#{options.coreutils_prefix}head"
+      end
+
+      def parallel_option(options)
+         options.key?(:parallel) ? " --parallel=#{options.parallel}" : ''
+      end
+      
       def sort_command(options)
         "#{options.coreutils_prefix}sort --parallel=#{options.parallel}#{options.key?('buffer_size') ? ' --buffer-size='+options.buffer_size+' ' : ''}"
       end
       
       def tee_command(options)
         "#{options.coreutils_prefix}tee"
+      end
+
+      def unlink_files(files)
+        files.each do |file|
+          File.unlink(file) if File.exist?(file)
+        end
+      end
+      
+      def wc_command(options)
+        "#{options.coreutils_prefix}wc"
       end
 
     end

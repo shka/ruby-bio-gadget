@@ -63,9 +63,7 @@ module Bio
       end
       
       system "#{cPrefix}sort -k 1,1 -k 2,2n -k 3,3n -k 4,4 --merge #{bSize} #{tmpfiles.join(' ')}"
-      tmpfiles.each do |tmpfile|
-        File.unlink(tmpfile) if FileTest.exist?(tmpfile)
-      end
+      unlink_files(tmpfiles)
       
     end
 
@@ -129,9 +127,8 @@ module Bio
         fp.close
       end
       system "cat #{tmpfiles.values.join(' ')}"
-      tmpfiles.each_value do |tmpfile|
-        File.unlink(tmpfile) if FileTest.exist?(tmpfile)
-      end
+      unlink_files(tmpfiles)
+      
     end
     
   end
