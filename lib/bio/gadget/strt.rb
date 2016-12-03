@@ -68,55 +68,12 @@ DESC
 
         begin
 
-          fqgzs = fqgzs0.split(/,/)
-          fqgz2tmp = Hash.new
-          fqgz2count1 = Hash.new
-          fqgz2count2 = Hash.new
-          fqgz2fifo1 = Hash.new
-          fqgz2fifo2 = Hash.new
-          fqgzs.each do |fqgz|
-            tmps << fqgz2tmp[fqgz] = get_temporary_path('strt.preprocess', 'fq1l', false)
-            tmps << fqgz2count1[fqgz] = get_temporary_path('strt.preprocess', 'txt', false)
-            tmps << fqgz2count2[fqgz] = get_temporary_path('strt.preprocess', 'txt', false)
-            tmps << fqgz2fifo1[fqgz] = get_fifo('strt.preprocess', 'fq1l')
-            tmps << fqgz2fifo2[fqgz] = get_fifo('strt.preprocess', 'fq1l')
-          end
-          
-          Parallel.map(fqgzs, in_processes: options.parallel) do |fqgz|
-            fifo1 = fqgz2fifo1[fqgz]
-            pid1 = spawn_wcl(options, fifo1, fqgz2count1[fqgz])
-            fifo2 = fqgz2fifo2[fqgz]
-            pid2 = spawn_wcl(options, fifo2, fqgz2count2[fqgz])
-            cmds = [
-              "gunzip -c #{File.expand_path(fqgz)}",
-              "fq1l convert#{coreutils_prefix_option(options)}",
-              "#{tee_command(options)} #{fifo1}",
-              "fq1l match_5end#{grep_prefix_option(options)} #{tso_pattern}",
-              "#{tee_command(options)} #{fifo2}",
-              "fq1l sort#{coreutils_prefix_option(options)} --parallel=#{(options.parallel.to_f/fqgzs.size).ceil} --buffer-size=#{(options.maximum_memory/options.parallel).to_i}% > #{fqgz2tmp[fqgz]}"]
-            cmds.insert(2, "#{head_command(options)} -n #{options.reads}") unless options.reads.nil?
-            stats = Open3.pipeline(*cmds)
-            Process.waitpid(pid1)
-            Process.waitpid(pid2)
-            stats.each_index do |i|
-              raise "Fail at process #{i} for #{fqgz}; #{stats[i]}; #{cmds[i]}" unless stats[i].success? || (stats[i].signaled? && stats[i].termsig == 13)
-            end
-          end
-          
-          reads1 = 0
-          fqgz2count1.each_value do |count1|
-            reads1 += `#{cat_command(options)} #{count1}`.rstrip.to_i
-          end
-          STDERR.puts "#{reads1} raw reads."
-          
-          reads2 = 0
-          fqgz2count2.each_value do |count2|
-            reads2 += `#{cat_command(options)} #{count2}`.rstrip.to_i
-          end
-          STDERR.puts "#{reads2} canonical reads."
-
-          #
-          
+          tmps << fifo1 = get_fifo('strt.preprocess', 'fq1l')
+          tmps << count1 = get_temporary_path('strt.preprocess', 'txt')
+          pid1 = spawn_wcl(options, fifo1, count1)
+          tmps << fifo2 = get_fifo('strt.preprocess', 'fq1l')
+          tmps << count2 = get_temporary_path('strt.preprocess', 'txt')
+          pid2 = spawn_wcl(options, fifo2, count2)
           tmps << fifo3 = get_fifo('strt.preprocess', 'fq1l')
           tmps << count3 = get_temporary_path('strt.preprocess', 'txt')
           pid3 = spawn_wcl(options, fifo3, count3)
@@ -132,8 +89,14 @@ DESC
           tmps << fifo7 = get_fifo('strt.preprocess', 'fq1l')
           tmps << count7 = get_temporary_path('strt.preprocess', 'txt')
           pid7 = spawn_wcl(options, fifo7, count7)
-          stats = Open3.pipeline(
-            "fq1l sort#{coreutils_prefix_option(options)} #{fqgz2tmp.values.join(' ')}",
+          
+          cmds = [
+            "gunzip -c #{fqgzs0.split(/,/).join(' ')}",
+            "fq1l convert#{coreutils_prefix_option(options)}",
+            "#{tee_command(options)} #{fifo1}",
+            "fq1l match_5end#{grep_prefix_option(options)} #{tso_pattern}",
+            "#{tee_command(options)} #{fifo2}",
+            "fq1l sort#{coreutils_prefix_option(options)}#{parallel_option(options)} --buffer-size=#{(options.maximum_memory/2).to_i}%",
             "fq1l exclude_duplicate",
             "#{tee_command(options)} #{fifo3}",
             "fq1l trim_3end_quality",
@@ -149,10 +112,20 @@ DESC
             "#{tee_command(options)} #{fifo7}",
             "fq1l sort_index#{coreutils_prefix_option(options)}#{parallel_option(options)} --buffer-size=#{(options.maximum_memory/2).to_i}%",
             "fq1l demultiplex #{base} #{map}"
-          )
+          ]
+          cmds.insert(2, "#{head_command(options)} -n #{options.reads}") unless options.reads.nil?
+          stats = Open3.pipeline(*cmds)
           stats.each_index do |i|
             raise "Fail at process #{i}; #{stats[i]}; #{cmds[i]}" unless stats[i].success? || (stats[i].signaled? && stats[i].termsig == 13)
           end
+          
+          Process.waitpid(pid1)
+          reads1 = `#{cat_command(options)} #{count1}`.rstrip.to_i
+          STDERR.puts "#{reads1} raw reads."
+          
+          Process.waitpid(pid2)
+          reads2 = `#{cat_command(options)} #{count2}`.rstrip.to_i
+          STDERR.puts "#{reads2} canonical reads."
           
           Process.waitpid(pid3)
           reads3 = `#{cat_command(options)} #{count3}`.rstrip.to_i

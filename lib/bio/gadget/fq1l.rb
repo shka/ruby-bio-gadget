@@ -331,7 +331,7 @@ module Bio
               break
             else
               fragments[length].sort.reverse.each do |fragment|
-                tmpfiles << tmpfile = get_temporary_path('fq1l.trim_3end_primer', 'fq1l', false)
+                tmpfiles << tmpfile = get_temporary_path("fq1l.trim_3end_primer.#{fragment}", 'fq1l', false)
                 commands << "fq1l trim_3end#{' --coreutils-prefix='+options.coreutils_prefix if options.key?(:coreutils_prefix)}#{' --grep-prefix='+options.grep_prefix if options.key?(:grep_prefix)} #{opt_minimum_length} --trimmed=#{tmpfile} #{fragment}"
               end
             end
