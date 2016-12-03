@@ -96,9 +96,6 @@ module Bio
 
         exit unless STDIN.wait
 
-        STDERR.puts na.sync
-        STDERR.puts STDOUT.sync
-        
         fp = na
         pbc = nil
         STDIN.set_encoding('BINARY').each do |line|
@@ -155,7 +152,8 @@ module Bio
 
       def match_3end(pattern)
         exit unless STDIN.wait
-        system "#{grep_command(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t[^\\t]*#{pattern}\\t'"
+        # PCRE was faster than BRE and ERE in GNU grep 2.25
+        system "#{grep_command(options)}#{options.invert_match ? ' -v' : ''} -P -e '^[^\\t]+\\t[^\\t]*#{pattern}\\t'"
         exit $?.to_i == 0 || $?.to_i == 1 ? 0 : $?.to_i
       end
       
@@ -168,6 +166,7 @@ module Bio
 
       def match_5end(pattern)
         exit unless STDIN.wait
+        # PCRE was faster than BRE and ERE in GNU grep 2.25
         system "#{grep_command(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t#{pattern}'"
         exit $?.to_i == 0 || $?.to_i == 1 ? 0 : $?.to_i
       end
@@ -295,22 +294,22 @@ module Bio
       method_option *OPT_MINIMUM_LENGTH
       method_option *OPT_PARALLEL
 
-      method_option :primer,
-                    default: 'AGATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG',
-                    desc: 'Primer sequence that be used for trimming',
+      method_option :primers,
+                    default: 'AGATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG,CTCGTATGCCGTCTTCTGCTTG',
+                    desc: 'Comma-separated primer sequences that be used for trimming',
                     type: :string
 
       def trim_3end_primer
 
         opt_minimum_length = "--minimum-length=#{options.minimum_length}"
-        primer = options.primer
+        primers = options.primers.split(',')
         
         fragments = Hash.new
-        max = primer.length-1
         tmp = Hash.new
-        for i in 0..max do
-          for j in i..max do
-            fragment = primer[i..j]
+        primers.each do |primer|
+          max = primer.length-1
+          for i in 0..max do
+            fragment = primer[0..i]
             unless tmp.key?(fragment)
               l = fragment.length
               fragments[l] = Array.new unless fragments.key?(l)
@@ -337,7 +336,7 @@ module Bio
               end
             end
           end
-          stats = pipeline(options.parallel*4, *commands)
+          stats = pipeline(options.parallel*2, *commands)
           stats.each_index do |i|
             raise "Fail at process #{i}; #{stats[i]}; #{commands[i]}" unless stats[i].success?
           end
@@ -370,7 +369,7 @@ module Bio
 
       method_option :minimum_length,
                     banner: 'NT',
-                    default: 26,
+                    default: 24,
                     desc: 'Minimum length after trimming',
                     type: :numeric
                       

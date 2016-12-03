@@ -4,6 +4,27 @@ module Bio
   class Gadget
     class Strt < Bio::Gadget
 
+      OPT_LENGTH_BARCODE = [ :length_barcode, { :banner => 'NT',
+                                                :default => 6,
+                                                :desc => 'Length of barcode',
+                                                :type => :numeric } ]
+
+      OPT_LENGTH_GAP = [ :length_gap, { :banner => 'NT',
+                                        :default => 3,
+                                        :desc => 'Length of gap (polyG)',
+                                        :type => :numeric } ]
+
+      OPT_LENGTH_MINIMUM = [ :length_minimum,
+                             { :banner => 'NT',
+                               :default => 25,
+                               :desc => 'Minimum length after preprocess',
+                               :type => :numeric } ]
+
+      OPT_LOW_QUALITIES = [ :low_qualities, { :banner => 'CHARACTERS',
+                                              :default => '!"#',
+                                              :desc => 'Low quality characters',
+                                              :type => :string } ]
+      
       desc 'depth FQGZ [FQGZ ...]',
            'Count nonredundant reads according to the sequencing depths'
 
@@ -15,7 +36,7 @@ module Bio
       method_option *OPT_LENGTH_BARCODE
       method_option *OPT_LENGTH_GAP
       method_option *OPT_LENGTH_MINIMUM
-      method_option *OPT_LENGTH_UMI
+      method_option *OPT_UMI_LENGTH
       method_option *OPT_LOW_QUALITIES
 
       method_option :tss,
@@ -35,7 +56,7 @@ module Bio
         pLen,
         uLen,
         match,
-        cPfx0 = Bio::Gadget::STRT.configure_prepSeq(options)
+        cPfx0 = configure_depth(options)
 
         fqgzs = [fqgz] + fqgzs0
         tmpfiles = Array.new(fqgzs.length) do |i|
@@ -72,7 +93,32 @@ CMD
         end
         
       end
-      
+
+      no_commands do 
+
+        def configure_depth(options)
+          uLength = options.umi_length
+          bLength = options.length_barcode 
+          gLength = options.length_gap
+          mLength = options.length_minimum
+          return [ options.key?('buffer_size') ?
+                     '--buffer-size='+options.buffer_size : '',
+                   options.coreutils_prefix == '' ?
+                     '' : "--coreutils-prefix=#{options.coreutils_prefix}",
+                   options.grep_prefix == '' ?
+                     '' : "--grep-prefix=#{options.grep_prefix}",
+                   "--parallel=#{options.parallel}",
+                   bLength,
+                   gLength,
+                   mLength,
+                   mLength + uLength + bLength + gLength,
+                   uLength,
+                   "#{'.' * uLength}#{'.' * bLength}#{'G' * (gLength-1)}",
+                   options.coreutils_prefix ]
+        end
+        
+      end
+
     end
   end
 end
