@@ -76,6 +76,7 @@ module Bio
       desc 'count [CSV]', 'Count sequences by the length'
 
       method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_PARALLEL
       
       def count(csv = nil)
         exit unless STDIN.wait
@@ -249,6 +250,27 @@ module Bio
         exit unless STDIN.wait
         exec "#{sort_command(options)} -k2"
       end
+
+      # fq1l:sum_count
+
+      desc 'sum_counts CSV ...', 'Sum counts of sequences by the length'
+
+      def sum_counts(*csvs)
+        length2count = Hash.new
+        csvs.each do |csv|
+          open(csv).each do |line|
+            l, c = line.rstrip.split(/,/)
+            next if l == 'length'
+            length = l.to_i
+            length2count[length] = 0 unless length2count.key?(length)
+            length2count[length] += c.to_i
+          end
+        end
+        puts "length,count"
+        length2count.keys.sort.each do |length|
+          puts "#{length},#{length2count[length]}"
+        end
+      end
       
       # fq1l:thin_out
 
@@ -414,28 +436,28 @@ module Bio
         
         def pipeline(parallel, *commands)
           stats = Array.new
-          tmpfiles = Array.new
+          tmpin = nil
+          tmpout = nil
           begin
             while commands.size > 0
               cmds = commands.shift(parallel)
-              tmpin = tmpfiles[0]
               cmds[0] = cmds[0] + " < #{tmpin}" unless tmpin.nil?
-              tmpfiles << tmpout = get_temporary_path('pipeline', 'tmp', false)
-              cmds[-1] = cmds[-1] + " > #{tmpout}" if commands.size > 0
+              if commands.size > 0
+                tmpout = get_temporary_path('pipeline', 'tmp', false)
+                cmds[-1] = cmds[-1] + " > #{tmpout}"
+              end
               tmpstats = Open3.pipeline(*cmds)
               stats.concat(tmpstats)
               tmpstats.each do |tmpstat|
                 commands = nil unless tmpstat.success?
               end
-              unless commands.nil?
-                File.unlink(tmpin) unless tmpin.nil?
-                tmpfiles.shift if tmpfiles.size > 1
-              else
-                break
-              end
+              brewk if commands.nil?
+              File.unlink(tmpin) unless tmpin.nil?
+              tmpin = tmpout
             end
           ensure
-            unlink_files(tmpfiles)
+            File.unlink(tmpin) if !tmpin.nil? && File.exist?(tmpin)
+            File.unlink(tmpout) if !tmpout.nil? && File.exist?(tmpout)
           end
           stats
         end
