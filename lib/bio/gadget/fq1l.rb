@@ -71,6 +71,35 @@ module Bio
         exec "#{options.coreutils_prefix}paste - - - -"
       end
 
+      # fq1l:count
+
+      desc 'count [CSV]', 'Count sequences by the length'
+
+      method_option *OPT_COREUTILS_PREFIX
+      
+      def count(csv = nil)
+        exit unless STDIN.wait
+        if csv.nil?
+          puts "length,reads"
+          cmds = [
+            "#{cut_command(options)} -f 2",
+            "ruby -anle 'puts $_.length'",
+            "#{sort_command(options)} -n",
+            "#{uniq_command(options)} -c",
+            "ruby -anle 'c=$_.strip.split(/\\s+/); puts c.reverse.join(\",\")'"
+          ]
+          stats = Open3.pipeline(*cmds)
+          stats.each_index do |i|
+            raise "Fail at process #{i}; #{stats[i]}; #{cmds[i]}" unless stats[i].success?
+          end
+        else
+          fifo = get_fifo('fq1l.count', 'fq1l')
+          pid = Kernel.spawn("fq1l count#{coreutils_prefix_option(options)} < #{fifo} > #{csv}")
+          system "#{tee_command(options)} #{fifo}"
+          Process.waitpid(pid)
+        end
+      end
+      
       # fq1l:demultiplex
 
       desc 'demultiplex BASE MAP', 'Demultiplex based on a barcode MAP, and restore sequence files with BASE names'
@@ -323,27 +352,27 @@ module Bio
 
         tmpfiles = Array.new
         commands = Array.new
-        pids = Array.new
-        begin 
-          fragments.keys.sort.reverse.each do |length|
-            if 4**length == fragments[length].size
-              commands << "fq1l trim_3end_length --trimming-length=#{length} #{opt_minimum_length}"
-              break
-            else
-              fragments[length].sort.reverse.each do |fragment|
-                tmpfiles << tmpfile = get_temporary_path("fq1l.trim_3end_primer.#{fragment}", 'fq1l', false)
-                commands << "fq1l trim_3end#{' --coreutils-prefix='+options.coreutils_prefix if options.key?(:coreutils_prefix)}#{' --grep-prefix='+options.grep_prefix if options.key?(:grep_prefix)} #{opt_minimum_length} --trimmed=#{tmpfile} #{fragment}"
-              end
+
+        fragments.keys.sort.reverse.each do |length|
+          if 4**length == fragments[length].size
+            commands << "fq1l trim_3end_length --trimming-length=#{length} #{opt_minimum_length}"
+            break
+          else
+            fragments[length].sort.reverse.each do |fragment|
+              tmpfiles << tmpfile = get_temporary_path("fq1l.trim_3end_primer.#{fragment}", 'fq1l', false)
+              commands << "fq1l trim_3end#{' --coreutils-prefix='+options.coreutils_prefix if options.key?(:coreutils_prefix)}#{' --grep-prefix='+options.grep_prefix if options.key?(:grep_prefix)} #{opt_minimum_length} --trimmed=#{tmpfile} #{fragment}"
             end
           end
-          stats = pipeline(options.parallel*2, *commands)
-          stats.each_index do |i|
-            raise "Fail at process #{i}; #{stats[i]}; #{commands[i]}" unless stats[i].success?
-          end
-          system "#{cat_command(options)} #{tmpfiles.join(' ')}"
-        ensure
-          unlink_files(tmpfiles)
         end
+        stats = pipeline(options.parallel*2, *commands)
+        stats.each_index do |i|
+          unless stats[i].success?
+            unlink_files(tmpfiles)
+            raise "Fail at process #{i}; #{stats[i]}; #{commands[i]}" 
+          end
+        end
+        system "#{cat_command(options)} #{tmpfiles.join(' ')}"
+        unlink_files(tmpfiles)
         
       end
 

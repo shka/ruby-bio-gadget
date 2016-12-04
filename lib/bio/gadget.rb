@@ -58,6 +58,10 @@ module Bio
          options.key?(:coreutils_prefix) ? " --coreutils-prefix=#{options.coreutils_prefix}" : ''
       end
       
+      def cut_command(options)
+        "#{options.coreutils_prefix}cut"
+      end
+
       def get_temporary_path(prefix, suffix, cleanup=true)
         tmpname = Dir::Tmpname.create(["rbg.#{prefix}.", ".#{suffix}"]) {  }
         if cleanup
@@ -89,11 +93,15 @@ module Bio
       end
       
       def sort_command(options)
-        "#{options.coreutils_prefix}sort --parallel=#{options.parallel}#{options.key?('buffer_size') ? ' --buffer-size='+options.buffer_size+' ' : ''}"
+        "#{options.coreutils_prefix}sort#{options.key?(:parallel) ? ' --parallel='+options.parallel.to_s : ''}#{options.key?(:buffer_size) ? ' --buffer-size='+options.buffer_size+' ' : ''}"
       end
       
       def tee_command(options)
         "#{options.coreutils_prefix}tee"
+      end
+
+      def uniq_command(options)
+        "#{options.coreutils_prefix}uniq"
       end
 
       def unlink_files(files)
