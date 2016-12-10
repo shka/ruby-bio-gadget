@@ -62,6 +62,18 @@ module Bio
         "#{options.coreutils_prefix}cut"
       end
 
+      def fq1l_convert_command(options)
+        "fq1l convert#{coreutils_prefix_option(options)}"
+      end
+      
+      def fq1l_count_command(options)
+        "fq1l count#{coreutils_prefix_option(options)}#{parallel_option(options)}"
+      end
+
+      def fq1l_sort_command(options)
+        "fq1l sort#{coreutils_prefix_option(options)}#{parallel_option(options)}"
+      end
+
       def get_temporary_path(prefix, suffix, cleanup=true)
         tmpname = Dir::Tmpname.create(["rbg.#{prefix}.", ".#{suffix}"]) {  }
         if cleanup
@@ -93,7 +105,7 @@ module Bio
       end
       
       def sort_command(options)
-        "#{options.coreutils_prefix}sort#{options.key?(:parallel) ? ' --parallel='+options.parallel.to_s : ''}#{options.key?(:buffer_size) ? ' --buffer-size='+options.buffer_size+' ' : ''}"
+        "#{options.coreutils_prefix}sort#{options.key?(:parallel) ? ' --parallel='+options.parallel.to_s : ''}#{options.key?(:buffer_size) ? ' --buffer-size='+options.buffer_size+' ' : ''} --compress-program=pigz"
       end
       
       def tee_command(options)

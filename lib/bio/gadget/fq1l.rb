@@ -112,21 +112,22 @@ module Bio
 
       def demultiplex(base, map)
         
-        bcs = Hash.new
-        open(map, 'r').each do |line|
-          bc, well = line.rstrip.split(',')
-          bcs[bc] = IO.popen("pigz -c > #{base}.#{well}.fq.gz", 'w:BINARY')
-          bcs[bc].sync = false
-        end
-        na = IO.popen("pigz -c > #{base}.NA.fq.gz", 'w:BINARY')
-        na.sync = false
-        bcl = bcs.keys.map!{|key| key.length}.sort.uniq[0]
-
         dl = DamerauLevenshtein
 
         exit unless STDIN.wait
 
-        fp = na
+        bc2fq = Hash.new
+        open(map, 'r').each do |line|
+          bc, well = line.rstrip.split(',')
+          bc2fq[bc] = fq = "#{base}.#{well}.fq"
+          File.unlink(fq) if File.exist?(fq)
+        end
+        na = "#{base}.NA.fq"
+        File.unlink(na) if File.exist?(na)
+        
+        bcl = bc2fq.keys.map!{|key| key.length}.sort.uniq[0]
+
+        fp = nil
         pbc = nil
         STDIN.set_encoding('BINARY').each do |line|
           acc, seq, sep, qual = line.rstrip.split(/\t/)
@@ -134,7 +135,7 @@ module Bio
           if bc != pbc
             mindist = options.maximum_distance+1
             minbc = nil
-            bcs.each_key do |key|
+            bc2fq.each_key do |key|
               dist = dl.distance(key, bc, 0, options.maximum_distance)
               if dist < mindist
                 mindist = dist
@@ -142,16 +143,16 @@ module Bio
               end
               break if dist == 0
             end
-            fp = mindist <= options.maximum_distance ? bcs[minbc] : na
+            fp.close unless fp.nil?
+            fp = open(mindist <= options.maximum_distance ? bc2fq[minbc] : na, 'a')
             pbc = bc
           end
           fp.puts "#{acc}\n#{seq}\n#{sep}\n#{qual}"
         end
-
-        bcs.each_value do |fp|
-          fp.close
-        end
-        na.close
+        fp.close unless fp.nil?
+        
+        bc2fq.each_value {|fq| system "pigz #{fq}" if File.exist?(fq) }
+        system "pigz #{na}" if File.exist?(na)
         
       end
       
@@ -251,7 +252,7 @@ module Bio
         exec "#{sort_command(options)} -k2"
       end
 
-      # fq1l:sum_count
+      # fq1l:sum_counts
 
       desc 'sum_counts CSV ...', 'Sum counts of sequences by the length'
 
@@ -295,7 +296,7 @@ module Bio
                     type: :string
 
       def trim_3end(sequence)
-        exit unless STDIN.wait
+        # exit unless STDIN.wait
         gPrefix = options.key?(:grep_prefix) ? " --grep-prefix=#{options.grep_prefix}" : ''
         fifo = get_fifo('fq1l.trim_3end', 'fq1l', false)
         begin
@@ -386,7 +387,7 @@ module Bio
             end
           end
         end
-        stats = pipeline(options.parallel*2, *commands)
+        stats = pipeline(options.parallel*3, *commands)
         stats.each_index do |i|
           unless stats[i].success?
             unlink_files(tmpfiles)
@@ -448,10 +449,8 @@ module Bio
               end
               tmpstats = Open3.pipeline(*cmds)
               stats.concat(tmpstats)
-              tmpstats.each do |tmpstat|
-                commands = nil unless tmpstat.success?
-              end
-              brewk if commands.nil?
+              tmpstats.each {|tmpstat| commands = nil unless tmpstat.success? }
+              break if commands.nil?
               File.unlink(tmpin) unless tmpin.nil?
               tmpin = tmpout
             end
