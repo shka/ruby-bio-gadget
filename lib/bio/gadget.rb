@@ -1,4 +1,5 @@
 require 'mkfifo'
+require 'open3'
 require 'tempfile'
 require 'thor'
 
@@ -16,14 +17,13 @@ module Bio
     
     OPT_PARALLEL = [
       :parallel, {
-        :aliases => '-p',
         :banner => 'N',
         :default => (
           system('which gnproc >/dev/null 2>&1') ?
             `gnproc`.to_i :
             (system('which nproc >/dev/null 2>&1') ? `nproc`.to_i : 2)
         ),
-        :desc => 'Change the number of sorts run concurrently to N',
+        :desc => 'Change the number of sorts run concurrently',
         :type => :numeric
       }
     ]
@@ -62,6 +62,10 @@ module Bio
         "#{options.coreutils_prefix}cut"
       end
 
+      def fold_command(options)
+        "#{options.coreutils_prefix}fold"
+      end
+      
       def fq1l_convert_command(options)
         "fq1l convert#{coreutils_prefix_option(options)}"
       end
@@ -102,6 +106,13 @@ module Bio
 
       def parallel_option(options)
          options.key?(:parallel) ? " --parallel=#{options.parallel}" : ''
+      end
+      
+      def pipeline(*cmds)
+        stats = Open3.pipeline(*cmds)
+        stats.each_index do |i|
+          raise "Fail at process #{i}; #{stats[i]}; #{cmds[i]}" unless stats[i].success?
+        end
       end
       
       def sort_command(options)

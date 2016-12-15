@@ -1,3 +1,4 @@
+require 'fileutils'
 require 'open3'
 require 'parallel'
 
@@ -5,16 +6,97 @@ module Bio
   class Gadget
     class Strt < Bio::Gadget
 
+      OPT_DOWNLOAD = [ :download, { :banner => 'BEHAVIOR',
+                                    :default => 'yes',
+                                    :desc => 'Download and process, no download or only',
+                                    :enum => ['yes', 'no', 'only'] } ]
+
+      OPT_GENOME = [ :genome, { :default => 'hg38',
+                                :desc => 'Genome assembly' } ]
+      
       OPT_UMI_LENGTH = [ :umi_length, { :banner => 'NT',
                                         :default => 6,
                                         :desc => 'Length of UMI',
                                         :type => :numeric } ]
-      
-      # strt:preprocess
 
-      desc 'preprocess BASE MAP FQGZs', 'Preprocess of raw sequences for STRT'
+      # strt:build_index
+
+      desc 'build_index DIR', 'Build index for alignment'
       long_desc <<-DESC
-Process raw sequences for STRT before alignment. After demultiplexing, it performs
+Build index for alignment of STRT reads, from the speficied GENOME, TRANSCRIPTOME and VARIATION, at DIR.
+DESC
+
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_DOWNLOAD
+      method_option *OPT_GENOME
+      method_option *OPT_PARALLEL
+      
+      def build_index(dir0)
+
+        dir = File.expand_path(dir0)
+        FileUtils.mkdir_p(dir)
+
+        STDERR.puts "#{`date`.strip}: Preparing data files..."
+        
+        cmds = options.download != 'no' ? ["strt prepare_variation#{coreutils_prefix_option(options)}#{genome_option(options)} --download=only #{dir}"] : []
+        cmds.push(
+          "strt prepare_genome#{coreutils_prefix_option(options)}#{download_option(options)}#{genome_option(options)} #{dir}",
+          "strt prepare_transcriptome#{coreutils_prefix_option(options)}#{download_option(options)}#{genome_option(options)} #{dir}",
+          "strt prepare_spikein#{coreutils_prefix_option(options)}#{download_option(options)} #{dir}",
+          "strt prepare_ribosome#{coreutils_prefix_option(options)}#{download_option(options)}#{genome_option(options)} #{dir}")
+        Parallel.map(cmds, in_threads: options.parallel) do |cmd|
+          system cmd or exit $?.exitstatus
+        end
+
+        STDERR.puts "#{`date`.strip}: Building index..."
+        
+        if options.download != 'only'
+          system "strt prepare_variation#{coreutils_prefix_option(options)}#{genome_option(options)} --download=no #{dir}" or exit $?.exitstatus
+          system "unpigz -c #{dir}/genome.fa.gz #{dir}/spikein.fa.gz #{dir}/ribosome.fa.gz > #{dir}/ref.fa"
+          system "samtools faidx #{dir}/ref.fa"
+          system "hisat2-build -f -p #{options.parallel} --snp #{dir}/variation.snp --haplotype #{dir}/variation.haplotype --ss #{dir}/transcriptome.splice_sites.tsv --exon #{dir}/transcriptome.exons.tsv #{dir}/ref.fa #{dir}/ref"
+        end
+        
+      end
+      
+      # strt:prepare_genome
+
+      desc 'prepare_genome DIR', 'Prepare genome data'
+      long_desc <<-DESC
+Prepare data files of the specified GENOME at DIR.
+DESC
+
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_DOWNLOAD
+      method_option *OPT_GENOME
+
+      def prepare_genome(dir0)
+
+        dir = File.expand_path(dir0)
+        tgz = "#{dir}/#{options.genome}.chromFa.tar.gz"
+        ucsc = "http://hgdownload.cse.ucsc.edu/goldenPath/#{options.genome}/bigZips"
+
+        if options.download != 'no'
+          if options.genome == 'hg38'
+            download_file("#{ucsc}/#{options.genome}.chromFa.tar.gz", tgz)
+          else
+            download_file("#{ucsc}/chromFa.tar.gz", tgz)
+          end
+        end
+        pipeline("unpigz -c #{tgz}",
+                 "#{options.coreutils_prefix}tar -xOf - --exclude \"*_*\"",
+                 "gawk 'BEGIN{p=\"\"} /^>/{ print p $1 } !/^>/{ printf $1; p=\"\\n\" } END{ print }'",
+                 "#{fold_command(options)} -w 50",
+                 "pigz -c > #{dir}/genome.fa.gz"
+                ) if options.download != 'only'
+        
+      end
+      
+      # strt:prepare_reads
+
+      desc 'prepare_reads BASE MAP FQGZ ...', 'Prepare STRT reads'
+      long_desc <<-DESC
+Prepare STRT reads from raw sequence files before alignment. After demultiplexing, it performs
 (i) exclusion of redundant reads,
 (ii) exclusion of noncanonical reads, which does not begin with template switching primer,
 (iii) trimming from low-quality base,
@@ -22,8 +104,6 @@ Process raw sequences for STRT before alignment. After demultiplexing, it perfor
 and (v) trimming of the template switching primer.
 
 Mandatory paramters are (1) BASE; basename for demulplexed and gzipped fastq files, (2) MAP; filename of comma-separated table between barcode and well, and (3) FQGZs; comma-separated filenames of raw sequences; each file is gzipped fastq. When MAP contains 'CAAAGT,A2' and BASE is '~/test', reads having CAAAGT-like barcode are in '~/test.A2.fq.gz' file after the preprocesses.
-
-
 DESC
 
       method_option *OPT_COREUTILS_PREFIX
@@ -51,7 +131,9 @@ DESC
       #               desc: 'Maximum distance between barcode and sequence',
       #               type: :numeric
 
-      def preprocess(base, map, fqgzs0)
+      def prepare_reads(base, map, fqgz0, *fqgzs0)
+
+        fqgzs = [fqgz0] + fqgzs0
 
         bcs = Hash.new
         open(map, 'r').each do |line|
@@ -70,7 +152,7 @@ DESC
         fqgz2csv0 = Hash.new
         fqgz2csv1 = Hash.new
         fqgz2base = Hash.new
-        fqgzs0.split(/,/).each do |fqgz|
+        fqgzs.each do |fqgz|
           fqgz2csv0[fqgz] = get_temporary_path('strt.preprocess', 'csv', false)
           fqgz2csv1[fqgz] = get_temporary_path('strt.preprocess', 'csv', false)
           fqgz2base[fqgz] = get_temporary_path('strt.preprocess', 'base', false)
@@ -108,37 +190,158 @@ DESC
           STDERR.puts "#{`date`.strip}: Finishing well #{well}..."
           
           tmpfqgzs = fqgz2base.values.map {|base| "#{base}.#{well}.fq.gz"}
-          
           csvs = Array.new(6) {|i| "#{base}.#{well}.count.step#{i+3}.csv"}
           
-          cmds = [
-            "unpigz -c #{tmpfqgzs.join(' ')}",
-            "#{fq1l_convert_command(options)}",
-            "#{fq1l_count_command(options)} #{csvs[0]}",
-            "#{fq1l_sort_command(options)} --buffer-size=#{(options.maximum_memory/2).to_i}%",
-            "fq1l exclude_duplicate",
-            "#{fq1l_count_command(options)} #{csvs[1]}",
-            "fq1l trim_3end_quality",
-            "#{fq1l_count_command(options)} #{csvs[2]}",
-            "fq1l trim_3end_primer#{coreutils_prefix_option(options)}#{grep_prefix_option(options)}#{parallel_option(options)}",
-            "#{fq1l_count_command(options)} #{csvs[3]}",
-            "#{fq1l_sort_command(options)} --buffer-size=#{(options.maximum_memory/2).to_i}%",
-            "fq1l exclude_degenerate",
-            "#{fq1l_count_command(options)} #{csvs[4]}",
-            "fq1l trim_5end --minimum-length=#{options.minimum_length} #{tso_pattern}+",
-            "#{fq1l_count_command(options)} #{csvs[5]}",
-            "fq1l restore#{coreutils_prefix_option(options)}",
-            "pigz -c > #{base}.#{well}.fq.gz"
-          ]
-          stats = Open3.pipeline(*cmds)
-          stats.each_index do |i|
-            raise "Fail at process #{i}; #{stats[i]}; #{cmds[i]}" unless stats[i].success?
-          end
+          pipeline("unpigz -c #{tmpfqgzs.join(' ')}",
+                   "#{fq1l_convert_command(options)}",
+                   "#{fq1l_count_command(options)} #{csvs[0]}",
+                   "#{fq1l_sort_command(options)} --buffer-size=#{(options.maximum_memory/2).to_i}%",
+                   "fq1l exclude_duplicate",
+                   "#{fq1l_count_command(options)} #{csvs[1]}",
+                   "fq1l trim_3end_quality",
+                   "#{fq1l_count_command(options)} #{csvs[2]}",
+                   "fq1l trim_3end_primer#{coreutils_prefix_option(options)}#{grep_prefix_option(options)}#{parallel_option(options)}",
+                   "#{fq1l_count_command(options)} #{csvs[3]}",
+                   "#{fq1l_sort_command(options)} --buffer-size=#{(options.maximum_memory/2).to_i}%",
+                   "fq1l exclude_degenerate",
+                   "#{fq1l_count_command(options)} #{csvs[4]}",
+                   "fq1l trim_5end --minimum-length=#{options.minimum_length} #{tso_pattern}+",
+                   "#{fq1l_count_command(options)} #{csvs[5]}",
+                   "fq1l restore#{coreutils_prefix_option(options)}",
+                   "pigz -c > #{base}.#{well}.fq.gz")
           
           unlink_files(tmpfqgzs)
           
         end
                              
+      end
+
+      # strt:prepare_ribosome
+
+      desc 'prepare_ribosome DIR', 'Prepare ribosome data'
+      long_desc <<-DESC
+Prepare ribosome data files for the specified GENOME at DIR.
+DESC
+
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_DOWNLOAD
+      method_option *OPT_GENOME
+
+      def prepare_ribosome(dir0)
+
+        dir = File.expand_path(dir0)
+
+        if options.genome[0..1] == 'hg'
+          if options.download != 'no'
+            download_file("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=555853&strand=1&rettype=fasta&retmode=text", "#{dir}/U13369.fa")
+            system "pigz #{dir}/U13369.fa" or exit $?.exitstatus
+          end
+          pipeline("unpigz -c #{dir}/U13369.fa.gz",
+                   "gawk '/^>/{ print \">RIBO_U13369.1\" } !/^>/{ printf $1 } END{ print }'",
+                   "#{fold_command(options)} -w 50",
+                   "pigz -c > #{dir}/ribosome.fa.gz"
+                  ) if options.download != 'only'
+        else
+          pipeline("echo", "pigz -c > #{dir}/ribosome.fa.gz")
+        end
+        
+      end
+
+      # strt:prepare_spikein
+
+      desc 'prepare_spikein DIR', 'Prepare spikein data'
+      long_desc <<-DESC
+Prepare spikein data files at DIR.
+DESC
+
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_DOWNLOAD
+
+      def prepare_spikein(dir0)
+        
+        dir = File.expand_path(dir0)
+        zip = "#{dir}/ERCC92.zip"
+        
+        download_file("https://tools.thermofisher.com/content/sfs/manuals/ERCC92.zip", zip) if options.download != 'no'
+        pipeline("unzip -cq #{zip} ERCC92.fa",
+                 "gawk 'BEGIN{p=\"\"} /^>/{ print p \">RNA_SPIKE_\" substr($1, 2); printf(\"AATTC\" ($1 == \">ERCC-00130\" ? \"GAGCTC\" : \"\") ) } /^[ACGT]/{ printf $1; p=\"\\n\" } END{ print }'",
+                 "#{fold_command(options)} -w 50",
+                 "pigz -c > #{dir}/spikein.fa.gz") if options.download != 'only'
+        
+      end
+      
+      # strt:prepare_transcriptome
+
+      desc 'prepare_transcriptome DIR', 'Prepare transcriptome data'
+      long_desc <<-DESC
+Prepare transcriptome data files for the specified GENOME dird on UCSC knownGene definition, at DIR.
+DESC
+
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_DOWNLOAD
+      method_option *OPT_GENOME
+
+      def prepare_transcriptome(dir0)
+        
+        dir = File.expand_path(dir0)
+        gtf = "#{dir}/transcriptome.gtf"
+        knownGene = "#{dir}/#{options.genome}.knownGene.txt.gz"
+        ucsc = "http://hgdownload.cse.ucsc.edu/goldenPath/#{options.genome}/database"
+
+        if options.download != 'no'
+          download_file("#{ucsc}/knownGene.txt.gz", knownGene)
+          download_file("#{ucsc}/kgXref.txt.gz",
+                        "#{dir}/#{options.genome}.kgXref.txt.gz")
+        end
+        if options.download != 'only'
+          pipeline("unpigz -c #{knownGene}",
+                   "#{cut_command(options)} -f 1-10",
+                   "genePredToGtf file stdin #{gtf}")
+          system "hisat2_extract_splice_sites.py #{gtf} > #{dir}/transcriptome.splice_sites.tsv" or exit $?.exitstatus
+          system "hisat2_extract_exons.py #{gtf} > #{dir}/transcriptome.exons.tsv" or exit $?.exitstatus
+        end
+        
+      end
+      
+      # strt:prepare_variation
+
+      desc 'prepare_variation DIR', 'Prepare variation data'
+      long_desc <<-DESC
+Prepare genome variation data files for the specified GENOME dird on dbSNP144Common, at DIR.
+DESC
+      
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_DOWNLOAD
+      method_option *OPT_GENOME
+
+      def prepare_variation(dir0)
+        
+        dir = File.expand_path(dir0)
+        snp = "#{dir}/#{options.genome}.snp144Common.txt.gz"
+
+        download_file("http://hgdownload.soe.ucsc.edu/goldenPath/#{options.genome}/database/snp144Common.txt.gz", snp) if options.download != 'no'
+        pipeline("unpigz -c #{dir}/genome.fa.gz",
+                 "hisat2_extract_snps_haplotypes_UCSC.py - #{snp} #{dir}/variation"
+                ) if options.download != 'only'
+        
+      end
+      
+      #
+
+      no_commands do
+
+        def download_file(url, path)
+          system "curl -R -f -s -S -o #{path} '#{url}'" or exit $?.exitstatus
+        end
+
+        def download_option(options)
+          " --download=#{options.download}"
+        end
+
+        def genome_option(options)
+          " --genome=#{options.genome}"
+        end
+        
       end
       
     end

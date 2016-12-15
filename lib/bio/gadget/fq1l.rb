@@ -82,17 +82,11 @@ module Bio
         exit unless STDIN.wait
         if csv.nil?
           puts "length,reads"
-          cmds = [
-            "#{cut_command(options)} -f 2",
-            "ruby -anle 'puts $_.length'",
-            "#{sort_command(options)} -n",
-            "#{uniq_command(options)} -c",
-            "ruby -anle 'c=$_.strip.split(/\\s+/); puts c.reverse.join(\",\")'"
-          ]
-          stats = Open3.pipeline(*cmds)
-          stats.each_index do |i|
-            raise "Fail at process #{i}; #{stats[i]}; #{cmds[i]}" unless stats[i].success?
-          end
+          pipeline("#{cut_command(options)} -f 2",
+                   "ruby -nle 'puts $_.length'",
+                   "#{sort_command(options)} -n",
+                   "#{uniq_command(options)} -c",
+                   "ruby -anle 'puts $F.reverse.join(\",\")'")
         else
           fifo = get_fifo('fq1l.count', 'fq1l')
           pid = Kernel.spawn("fq1l count#{coreutils_prefix_option(options)} < #{fifo} > #{csv}")
@@ -305,13 +299,8 @@ module Bio
             pid = Process.fork do
               BioGadget.t3("fq1l match_3end#{gPrefix} #{sequence} < #{fifo}", sequence.length, options.minimum_length, tmpfile)
             end
-            commands = ["#{tee_command(options)} #{fifo}",
-                        "fq1l match_3end#{gPrefix} #{sequence} --invert-match"]
-            stats = Open3.pipeline(*commands)
-            Process.waitpid(pid)
-            stats.each_index do |i|
-              raise "Fail at process #{i}; #{stats[i]}; #{commands[i]}" unless stats[i].success?
-            end
+            pipeline("#{tee_command(options)} #{fifo}",
+                     "fq1l match_3end#{gPrefix} #{sequence} --invert-match")
           ensure
             system "#{cat_command(options)} #{tmpfile}" unless options.key?(:trimmed)
           end
@@ -387,7 +376,7 @@ module Bio
             end
           end
         end
-        stats = pipeline(options.parallel*3, *commands)
+        stats = Open3.pipeline(*commands)
         stats.each_index do |i|
           unless stats[i].success?
             unlink_files(tmpfiles)
@@ -431,37 +420,37 @@ module Bio
         BioGadget.t5(pattern, options.minimum_length)
       end
 
-      #
+      # #
 
-      no_commands do
+      # no_commands do
         
-        def pipeline(parallel, *commands)
-          stats = Array.new
-          tmpin = nil
-          tmpout = nil
-          begin
-            while commands.size > 0
-              cmds = commands.shift(parallel)
-              cmds[0] = cmds[0] + " < #{tmpin}" unless tmpin.nil?
-              if commands.size > 0
-                tmpout = get_temporary_path('pipeline', 'tmp', false)
-                cmds[-1] = cmds[-1] + " > #{tmpout}"
-              end
-              tmpstats = Open3.pipeline(*cmds)
-              stats.concat(tmpstats)
-              tmpstats.each {|tmpstat| commands = nil unless tmpstat.success? }
-              break if commands.nil?
-              File.unlink(tmpin) unless tmpin.nil?
-              tmpin = tmpout
-            end
-          ensure
-            File.unlink(tmpin) if !tmpin.nil? && File.exist?(tmpin)
-            File.unlink(tmpout) if !tmpout.nil? && File.exist?(tmpout)
-          end
-          stats
-        end
+      #   def pipeline(parallel, *commands)
+      #     stats = Array.new
+      #     tmpin = nil
+      #     tmpout = nil
+      #     begin
+      #       while commands.size > 0
+      #         cmds = commands.shift(parallel)
+      #         cmds[0] = cmds[0] + " < #{tmpin}" unless tmpin.nil?
+      #         if commands.size > 0
+      #           tmpout = get_temporary_path('pipeline', 'tmp', false)
+      #           cmds[-1] = cmds[-1] + " > #{tmpout}"
+      #         end
+      #         tmpstats = Open3.pipeline(*cmds)
+      #         stats.concat(tmpstats)
+      #         tmpstats.each {|tmpstat| commands = nil unless tmpstat.success? }
+      #         break if commands.nil?
+      #         File.unlink(tmpin) unless tmpin.nil?
+      #         tmpin = tmpout
+      #       end
+      #     ensure
+      #       File.unlink(tmpin) if !tmpin.nil? && File.exist?(tmpin)
+      #       File.unlink(tmpout) if !tmpout.nil? && File.exist?(tmpout)
+      #     end
+      #     stats
+      #   end
         
-      end
+      # end
       
     end
   end
