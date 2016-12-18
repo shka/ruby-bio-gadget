@@ -19,6 +19,36 @@ module Bio
                                         :desc => 'Length of UMI',
                                         :type => :numeric } ]
 
+      # strt:alignment
+
+      desc 'alignment INDEX FQGZDIR BAMDIR', 'Align reads to reference'
+      long_desc <<-DESC
+Align STRT reads (*.fq.gz files at FQGZDIR) to a reference (INDEX/ref.*.ht2). The results will be at BAMDIR/*.bam.
+DESC
+
+      method_option *OPT_PARALLEL
+
+      def alignment(index0, indir0, outdir0)
+        
+        index = File.expand_path(index0)
+        outdir = File.expand_path(outdir0)
+        
+        Dir.glob("#{File.expand_path(indir0)}/*.fq.gz").each do |fqgz|
+          
+          STDERR.puts "#{`date`.strip}: Align #{fqgz}..."
+
+          tmpbam = get_temporary_path('strt.alignment', 'bam')
+          bam = "#{outdir}/#{File.basename(fqgz, '.fq.gz')}.bam"
+          
+          pipeline("hisat2 --rna-strandness F --dta-cufflinks -p #{options.parallel} -x #{index}/ref -U #{fqgz}",
+                   "samtools view -S -b -@ #{options.parallel} - > #{tmpbam}")
+          system "samtools sort -f -@ #{options.parallel} #{tmpbam} #{bam}" or exit $?.exitstatus
+          system "samtools index #{bam}" or exit $?.exitstatus
+          
+        end
+        
+      end
+      
       # strt:build_index
 
       desc 'build_index DIR', 'Build index for alignment'
