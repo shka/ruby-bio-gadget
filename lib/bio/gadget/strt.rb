@@ -2,14 +2,11 @@ require 'fileutils'
 require 'open3'
 require 'parallel'
 
+require 'bio/gadget/strt/prepare_transcriptome.rb'
+
 module Bio
   class Gadget
     class Strt < Bio::Gadget
-
-      OPT_DOWNLOAD = [ :download, { :banner => 'BEHAVIOR',
-                                    :default => 'yes',
-                                    :desc => 'Download and process, no download or only',
-                                    :enum => ['yes', 'no', 'only'] } ]
 
       OPT_GENOME = [ :genome, { :default => 'hg38',
                                 :desc => 'Genome assembly' } ]
@@ -88,7 +85,7 @@ DESC
         end
         
       end
-      
+
       # strt:prepare_genome
 
       desc 'prepare_genome DIR', 'Prepare genome data'
@@ -302,36 +299,10 @@ DESC
       
       # strt:prepare_transcriptome
 
-      desc 'prepare_transcriptome DIR', 'Prepare transcriptome data'
-      long_desc <<-DESC
-Prepare transcriptome data files for the specified GENOME dird on UCSC knownGene definition, at DIR.
-DESC
-
-      method_option *OPT_COREUTILS_PREFIX
-      method_option *OPT_DOWNLOAD
-      method_option *OPT_GENOME
-
-      def prepare_transcriptome(dir0)
-        
-        dir = File.expand_path(dir0)
-        gtf = "#{dir}/transcriptome.gtf"
-        knownGene = "#{dir}/#{options.genome}.knownGene.txt.gz"
-        ucsc = "http://hgdownload.cse.ucsc.edu/goldenPath/#{options.genome}/database"
-
-        if options.download != 'no'
-          download_file("#{ucsc}/knownGene.txt.gz", knownGene)
-          download_file("#{ucsc}/kgXref.txt.gz",
-                        "#{dir}/#{options.genome}.kgXref.txt.gz")
-        end
-        if options.download != 'only'
-          pipeline("unpigz -c #{knownGene}",
-                   "#{cut_command(options)} -f 1-10",
-                   "genePredToGtf file stdin #{gtf}")
-          system "hisat2_extract_splice_sites.py #{gtf} > #{dir}/transcriptome.splice_sites.tsv" or exit $?.exitstatus
-          system "hisat2_extract_exons.py #{gtf} > #{dir}/transcriptome.exons.tsv" or exit $?.exitstatus
-        end
-        
-      end
+      register(Bio::Gadget::StrtPrepareTranscriptome,
+               'prepare_transcriptome',
+               'prepare_transcriptome GENOME',
+               'Prepare transcriptome data')
       
       # strt:prepare_variation
 
@@ -360,10 +331,6 @@ DESC
 
       no_commands do
 
-        def download_file(url, path)
-          system "curl -R -f -s -S -o #{path} '#{url}'" or exit $?.exitstatus
-        end
-
         def download_option(options)
           " --download=#{options.download}"
         end
@@ -381,6 +348,4 @@ end
 require 'bio/gadget/strt/bam2bed5p.rb'
 require 'bio/gadget/strt/count.rb'
 require 'bio/gadget/strt/depth.rb'
-require 'bio/gadget/strt/prepBed.rb'
-require 'bio/gadget/strt/prepGtf.rb'
 require 'bio/gadget/strt/qcSmp.rb'

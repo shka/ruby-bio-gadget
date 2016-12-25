@@ -15,6 +15,12 @@ module Bio
       }
     ]
     
+    OPT_DOWNLOAD = [ :download, {
+                       :banner => 'BEHAVIOR',
+                       :default => 'yes',
+                       :desc => 'Download and process, no download or only',
+                       :enum => ['yes', 'no', 'only'] } ]
+    
     OPT_PARALLEL = [
       :parallel, {
         :banner => 'N',
@@ -60,6 +66,10 @@ module Bio
       
       def cut_command(options)
         "#{options.coreutils_prefix}cut"
+      end
+
+      def download_file(url, path)
+        system "curl -R -f -s -S -o #{path} '#{url}'" or exit $?.exitstatus
       end
 
       def fold_command(options)
