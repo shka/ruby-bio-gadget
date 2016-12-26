@@ -56,6 +56,10 @@ module Bio
 
     no_commands do
       
+      def self.banner(command, namespace = true, subcommand = false)
+        "#{basename} #{@package_name.nil? ? '' : @package_name.to_s+' '}#{command.usage}"
+      end
+
       def cat_command(options)
         "#{options.coreutils_prefix}cat"
       end

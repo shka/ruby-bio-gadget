@@ -6,10 +6,6 @@ module Bio
 
       package_name :prepare_transcriptome
 
-      def self.banner(command, namespace = true, subcommand = false)
-        "#{basename} #{@package_name} #{command.usage}"
-      end
-
       #
       
       desc 'hg38 DIR', 'GRCh38/hg38 - human'

@@ -3,6 +3,7 @@ require 'open3'
 require 'parallel'
 
 require 'bio/gadget/strt/prepare_transcriptome.rb'
+require 'bio/gadget/strt/prepare_variation.rb'
 
 module Bio
   class Gadget
@@ -306,26 +307,31 @@ DESC
       
       # strt:prepare_variation
 
-      desc 'prepare_variation DIR', 'Prepare variation data'
-      long_desc <<-DESC
-Prepare genome variation data files for the specified GENOME dird on dbSNP144Common, at DIR.
-DESC
+      register(Bio::Gadget::StrtPrepareVariation,
+               'prepare_variation',
+               'prepare_variation GENOME',
+               'Prepare variation data')
       
-      method_option *OPT_COREUTILS_PREFIX
-      method_option *OPT_DOWNLOAD
-      method_option *OPT_GENOME
+#       desc 'prepare_variation DIR', 'Prepare variation data'
+#       long_desc <<-DESC
+# Prepare genome variation data files for the specified GENOME dird on dbSNP144Common, at DIR.
+# DESC
+      
+#       method_option *OPT_COREUTILS_PREFIX
+#       method_option *OPT_DOWNLOAD
+#       method_option *OPT_GENOME
 
-      def prepare_variation(dir0)
+#       def prepare_variation(dir0)
         
-        dir = File.expand_path(dir0)
-        snp = "#{dir}/#{options.genome}.snp144Common.txt.gz"
+#         dir = File.expand_path(dir0)
+#         snp = "#{dir}/#{options.genome}.snp144Common.txt.gz"
 
-        download_file("http://hgdownload.soe.ucsc.edu/goldenPath/#{options.genome}/database/snp144Common.txt.gz", snp) if options.download != 'no'
-        pipeline("unpigz -c #{dir}/genome.fa.gz",
-                 "hisat2_extract_snps_haplotypes_UCSC.py - #{snp} #{dir}/variation"
-                ) if options.download != 'only'
+#         download_file("http://hgdownload.soe.ucsc.edu/goldenPath/#{options.genome}/database/snp144Common.txt.gz", snp) if options.download != 'no'
+#         pipeline("unpigz -c #{dir}/genome.fa.gz",
+#                  "hisat2_extract_snps_haplotypes_UCSC.py - #{snp} #{dir}/variation"
+#                 ) if options.download != 'only'
         
-      end
+#       end
       
       #
 
