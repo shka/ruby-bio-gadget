@@ -3,7 +3,6 @@ require 'open3'
 require 'parallel'
 
 require 'bio/gadget/strt/prepare_transcriptome.rb'
-require 'bio/gadget/strt/prepare_variation.rb'
 
 module Bio
   class Gadget
@@ -55,8 +54,8 @@ Build index for alignment of STRT reads, from the speficied GENOME, TRANSCRIPTOM
 DESC
 
       method_option *OPT_COREUTILS_PREFIX
-      method_option *OPT_DOWNLOAD
       method_option *OPT_GENOME
+      method_option *OPT_GREP_PREFIX
       method_option *OPT_PARALLEL
       
       def build_index(dir0)
@@ -66,24 +65,27 @@ DESC
 
         STDERR.puts "#{`date`.strip}: Preparing data files..."
         
-        cmds = options.download != 'no' ? ["strt prepare_variation#{coreutils_prefix_option(options)}#{genome_option(options)} --download=only #{dir}"] : []
-        cmds.push(
-          "strt prepare_genome#{coreutils_prefix_option(options)}#{download_option(options)}#{genome_option(options)} #{dir}",
-          "strt prepare_transcriptome#{coreutils_prefix_option(options)}#{download_option(options)}#{genome_option(options)} #{dir}",
-          "strt prepare_spikein#{coreutils_prefix_option(options)}#{download_option(options)} #{dir}",
-          "strt prepare_ribosome#{coreutils_prefix_option(options)}#{download_option(options)}#{genome_option(options)} #{dir}")
-        Parallel.map(cmds, in_threads: options.parallel) do |cmd|
+        Parallel.map(
+          ["strt prepare_genome#{coreutils_prefix_option(options)}#{genome_option(options)} #{dir}",
+           "strt prepare_variation#{coreutils_prefix_option(options)}#{genome_option(options)} --download=only #{dir}",
+           "strt prepare_transcriptome #{options.genome}#{coreutils_prefix_option(options)}#{grep_prefix_option(options)} --download=only #{dir}",
+           "strt prepare_spikein#{coreutils_prefix_option(options)} #{dir}",
+           "strt prepare_ribosome#{coreutils_prefix_option(options)}#{genome_option(options)} #{dir}"], in_threads: options.parallel) do |cmd|
           system cmd or exit $?.exitstatus
         end
 
+        system "unpigz -c #{dir}/genome.fa.gz #{dir}/spikein.fa.gz #{dir}/ribosome.fa.gz > #{dir}/ref.fa"
+        system "samtools faidx #{dir}/ref.fa"
+
+        Parallel.map(["strt prepare_transcriptome #{options.genome}#{coreutils_prefix_option(options)}#{grep_prefix_option(options)} --download=no #{dir}",
+                      "strt prepare_variation#{coreutils_prefix_option(options)}#{genome_option(options)} --download=no #{dir}"], in_threads: options.parallel) do |cmd|
+          STDERR.puts cmd
+          system cmd or exit $?.exitstatus
+        end
+        
         STDERR.puts "#{`date`.strip}: Building index..."
         
-        if options.download != 'only'
-          system "strt prepare_variation#{coreutils_prefix_option(options)}#{genome_option(options)} --download=no #{dir}" or exit $?.exitstatus
-          system "unpigz -c #{dir}/genome.fa.gz #{dir}/spikein.fa.gz #{dir}/ribosome.fa.gz > #{dir}/ref.fa"
-          system "samtools faidx #{dir}/ref.fa"
-          system "hisat2-build -f -p #{options.parallel} --snp #{dir}/variation.snp --haplotype #{dir}/variation.haplotype --ss #{dir}/transcriptome.splice_sites.tsv --exon #{dir}/transcriptome.exons.tsv #{dir}/ref.fa #{dir}/ref"
-        end
+        system "hisat2-build -f -p #{options.parallel} --snp #{dir}/variation.snp --haplotype #{dir}/variation.haplotype --ss #{dir}/transcriptome.splice_sites --exon #{dir}/transcriptome.exons #{dir}/ref.fa #{dir}/ref"
         
       end
 
@@ -102,13 +104,13 @@ DESC
 
         dir = File.expand_path(dir0)
         tgz = "#{dir}/#{options.genome}.chromFa.tar.gz"
-        ucsc = "http://hgdownload.cse.ucsc.edu/goldenPath/#{options.genome}/bigZips"
+        ucsc = "rsync://hgdownload.cse.ucsc.edu/goldenPath/#{options.genome}/bigZips"
 
         if options.download != 'no'
           if options.genome == 'hg38'
-            download_file("#{ucsc}/#{options.genome}.chromFa.tar.gz", tgz)
+            rsync_file("#{ucsc}/#{options.genome}.chromFa.tar.gz", tgz)
           else
-            download_file("#{ucsc}/chromFa.tar.gz", tgz)
+            rsync_file("#{ucsc}/chromFa.tar.gz", tgz)
           end
         end
         pipeline("unpigz -c #{tgz}",
@@ -307,32 +309,33 @@ DESC
       
       # strt:prepare_variation
 
-      register(Bio::Gadget::StrtPrepareVariation,
-               'prepare_variation',
-               'prepare_variation GENOME',
-               'Prepare variation data')
+      desc 'prepare_variation DIR', 'Prepare variation data'
+      long_desc <<-DESC
+Prepare genome variation data files for the specified GENOME dir based on common variations in dbSNP BUILD, at DIR.
+DESC
       
-#       desc 'prepare_variation DIR', 'Prepare variation data'
-#       long_desc <<-DESC
-# Prepare genome variation data files for the specified GENOME dird on dbSNP144Common, at DIR.
-# DESC
-      
-#       method_option *OPT_COREUTILS_PREFIX
-#       method_option *OPT_DOWNLOAD
-#       method_option *OPT_GENOME
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_DOWNLOAD
+      method_option *OPT_GENOME
 
-#       def prepare_variation(dir0)
-        
-#         dir = File.expand_path(dir0)
-#         snp = "#{dir}/#{options.genome}.snp144Common.txt.gz"
-
-#         download_file("http://hgdownload.soe.ucsc.edu/goldenPath/#{options.genome}/database/snp144Common.txt.gz", snp) if options.download != 'no'
-#         pipeline("unpigz -c #{dir}/genome.fa.gz",
-#                  "hisat2_extract_snps_haplotypes_UCSC.py - #{snp} #{dir}/variation"
-#                 ) if options.download != 'only'
-        
-#       end
+      method_option :dbsnp,
+                    banner: 'BUILD',
+                    default: 146,
+                    desc: 'Build number of dbSNP',
+                    type: :numeric
       
+      def prepare_variation(dir0)
+        
+        dir = File.expand_path(dir0)
+        snp = "#{dir}/#{options.genome}.snp#{options.dbsnp}Common.txt.gz"
+
+        rsync_file("rsync://hgdownload.soe.ucsc.edu/goldenPath/#{options.genome}/database/snp#{options.dbsnp}Common.txt.gz", snp) if options.download != 'no'
+        pipeline("unpigz -c #{dir}/genome.fa.gz",
+                 "hisat2_extract_snps_haplotypes_UCSC.py - #{snp} #{dir}/variation"
+                ) if options.download != 'only'
+        
+      end
+
       #
 
       no_commands do
@@ -343,6 +346,10 @@ DESC
 
         def genome_option(options)
           " --genome=#{options.genome}"
+        end
+
+        def rsync_file(remote, local)
+          system "rsync -a #{remote} #{local}" or exit $?.exitstatus
         end
         
       end
