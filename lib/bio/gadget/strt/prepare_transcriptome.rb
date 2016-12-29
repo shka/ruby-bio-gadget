@@ -160,7 +160,13 @@ DESC
                             bed_coding_promoter, bed_coding_exon)
 
           system "pigz #{dir}/*.bed" or exit $?.exitstatus
-          
+
+          genePred = "#{dir}/hg38_refGene.txt"
+          pipelin("unpigz -c #{gtf}",
+                  "#{grep_command(options)} 'tag \"basic\"'",
+                  "gtfToGenePred -geneNameAsName2 -genePredExt stdin #{genePred}")
+          system "retrieve_seq_from_fasta.pl --format refGene --seqfile #{dir}/ref.fa --outfile #{dir}/hg38_refGeneMrna.fa #{genePred}" or exit $?.exitstatus
+
         end
         
       end

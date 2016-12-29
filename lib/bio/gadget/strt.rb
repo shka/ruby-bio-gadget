@@ -1,3 +1,4 @@
+require 'csv'
 require 'fileutils'
 require 'open3'
 require 'parallel'
@@ -87,6 +88,33 @@ DESC
         
         system "hisat2-build -f -p #{options.parallel} --snp #{dir}/variation.snp --haplotype #{dir}/variation.haplotype --ss #{dir}/transcriptome.splice_sites --exon #{dir}/transcriptome.exons #{dir}/ref.fa #{dir}/ref"
         
+      end
+
+      # strt:call_allele
+
+      desc 'call_allele CSV BAMDIR REFDIR', 'Call allele frequency'
+      long_desc <<-DESC
+Call allele frequencies of multiple samples specified in a design CSV, based on alignment files at BAMDIR, and reference sequence 'ref.fa' and the index at REFDIR.
+DESC
+
+      method_option *OPT_GENOME
+
+      def call_allele(csv, bamdir, refdir)
+
+        design = CSV.table(csv, headers: true)
+        bams = get_temporary_path('strt.call_allele', 'bams')
+        fp = open(bams, 'w')
+        design[:bam].each {|bam| fp.puts "#{bamdir}/#{bam}.bam" }
+        fp.close
+        csvdir = File.dirname(csv)
+        bcf = "#{csvdir}/strt-call_allele.bcf"
+
+        pipeline("samtools mpileup -u -t AD,ADF,ADR,DP -f #{refdir}/ref.fa -b #{bams}",
+                 "bcftools call --multiallelic-caller --variants-only --output-type u",
+                 "bcftools filter -s LowQual -e '%QUAL<20 || MIN(FORMAT/DP)<20' --output-type b > #{bcf}")
+        pipeline("bcftools view #{bcf}",
+                 "table_annovar.pl - #{refdir} --buildver #{options.genome} --outfile #{csvdir}/strt-call_allele --remove --protocol refGene --operation g --nastring . --vcfinput")
+
       end
 
       # strt:prepare_genome
