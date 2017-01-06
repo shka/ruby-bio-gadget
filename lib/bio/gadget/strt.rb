@@ -106,10 +106,10 @@ DESC
 
       def call_allele(csv, bamdir, refdir)
 
-        design = CSV.table(csv, headers: true)
+        design = CSV.table(csv)
         bams = get_temporary_path('strt.call_allele', 'bams')
         fp = open(bams, 'w')
-        design[:bam].each {|bam| fp.puts "#{bamdir}/#{bam}.bam" }
+        design[:base].each {|bam| fp.puts "#{bamdir}/#{bam}.bam" }
         fp.close
         csvdir = File.dirname(csv)
         bcf = "#{csvdir}/strt-call_allele.bcf"
@@ -122,6 +122,106 @@ DESC
 
       end
 
+      # strt:check_samples
+
+      desc 'check_sampels CSV SEQDIR BAMDIR BEDDIR REFDIR', 'Check samples'
+long_desc <<-DESC
+Check samples in a design CSV by counting.'
+DESC
+
+      method_option *OPT_BUFFER_SIZE
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_PARALLEL
+
+      def check_samples(csv, seqdir, bamdir, beddir, refdir)
+
+        count_commands = ["#{cut_command(options)} -f 5",
+                          "ruby -e 'n=0; while gets; n+=$_.to_i; end; puts n'"]
+
+        samples = CSV.read(csv, {
+                             headers: true,
+                             converters: :numeric
+                           })
+        bases = samples["BASE"]
+
+        samples["TOTAL_READS"] =
+          Parallel.map(bases, in_threads: options.parallel) do |base|
+          stat = CSV.table("#{seqdir}/#{base}.count.step8.csv")
+          n = 0
+          stat[:reads].each {|i| n += i }
+          n
+        end
+
+        samples["MAPPED_READS"] =
+          Parallel.map(bases, in_threads: options.parallel) do |base|
+          pipeline_readline("unpigz -c #{beddir}/#{base}.bed.gz",
+                            *count_commands).to_i
+        end
+
+        tmp = Array.new
+        samples.each do |row|
+          tmp << row["MAPPED_READS"].to_f / row["TOTAL_READS"]
+        end
+        samples["MAPPED_RATE"] = tmp
+
+        samples["RIBOSOME_READS"] = 
+          Parallel.map(bases, in_threads: options.parallel) do |base|
+          pipeline_readline("bedtools intersect -nonamecheck -s -a #{beddir}/#{base}.bed.gz -b #{refdir}/ribosome.bed.gz",
+                            *count_commands).to_i
+        end
+
+        samples["SPIKEIN_READS"] =
+          Parallel.map(bases, in_threads: options.parallel) do |base|
+          pipeline_readline("bedtools intersect -nonamecheck -s -a #{beddir}/#{base}.bed.gz -b #{refdir}/spikein_whole.bed.gz",
+                            *count_commands).to_i
+        end
+
+        tmp = Array.new
+        samples.each do |row|
+          tmp << (row["MAPPED_READS"] - row["RIBOSOME_READS"] - row["SPIKEIN_READS"]) / row["SPIKEIN_READS"].to_f
+        end
+        samples["RELATIVE_POLYA_RNAS"] = tmp
+
+        samples["SPIKEIN_5END_READS"] =
+          Parallel.map(bases, in_threads: options.parallel) do |base|
+          pipeline_readline("bedtools intersect -nonamecheck -s -a #{beddir}/#{base}.bed.gz -b #{refdir}/spikein_5end.bed.gz",
+                            *count_commands).to_i
+        end
+
+        tmp = Array.new
+        samples.each do |row|
+          tmp << row["SPIKEIN_5END_READS"].to_f / row["SPIKEIN_READS"]
+        end
+        samples["SPIKEIN_5END_RATE"] = tmp
+
+        samples["CODING_READS"] =
+          Parallel.map(bases, in_threads: options.parallel) do |base|
+          pipeline_readline("bedtools intersect -nonamecheck -s -a #{beddir}/#{base}.bed.gz -b #{refdir}/transcriptome.coding_whole.bed.gz",
+                            *count_commands).to_i
+        end
+
+        samples["CODING_5END_READS"] =
+          Parallel.map(bases, in_threads: options.parallel) do |base|
+          pipeline_readline("bedtools intersect -nonamecheck -s -a #{beddir}/#{base}.bed.gz -b #{refdir}/transcriptome.coding_5end.bed.gz",
+                            *count_commands).to_i
+        end
+
+        tmp = Array.new
+        samples.each do |row|
+          tmp << row["CODING_5END_READS"].to_f / row["CODING_READS"]
+        end
+        samples["CODING_5END_RATE"] = tmp
+
+        tmp = Array.new
+        samples.each do |row|
+          tmp << row["CODING_5END_READS"].to_f / row["SPIKEIN_READS"]
+        end
+        samples["RELATIVE_MRNAS"] = tmp
+
+        puts samples
+
+      end
+      
       # strt:count_per_base
 
       desc 'count_per_base BAM',  'Count reads per base'
@@ -135,7 +235,9 @@ DESC
 
       def count_per_base(bam)
 
-        pipeline("samtools view -@ #{coreutils_prefix_option(options)} -b -q 1 #{bam}",
+        pipeline("samtools view -h #{bam}",
+                 "grep -v -E 'NH:i:([2-9][0-9]*|1[0-9]+)'",
+                 "samtools view -S -u -b -",
                  "bedtools bamtobed -i stdin",
                  "ruby -F'\t' -anle 'puts [$F[0], $F[5]==\"+\" ? $F[1] : $F[2].to_i-1, $F[5]==\"+\" ? $F[1].to_i+1 : $F[2], $F[5]].join(\"\t\")'",
                  "#{sort_command(options)} -t '\t' -k 1,1 -k 2,2n",
@@ -403,6 +505,14 @@ DESC
           " --genome=#{options.genome}"
         end
 
+        def pipeline_readline(*cmds)
+          fp, ths = Open3.pipeline_r(*cmds)
+          line = fp.gets.strip
+          fp.close
+          ths[-1].join
+          line
+        end
+
         def rsync_file(remote, local)
           system "rsync -a #{remote} #{local}" or exit $?.exitstatus
         end
@@ -415,4 +525,3 @@ end
 
 require 'bio/gadget/strt/count.rb'
 require 'bio/gadget/strt/depth.rb'
-require 'bio/gadget/strt/qcSmp.rb'

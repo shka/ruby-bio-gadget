@@ -46,7 +46,10 @@ DESC
           fp_5end = open_bed_w("#{dir}/spikein_5end.bed")
           open("#{dir}/ref.fa.fai").each do |line|
             acc, len, *tmp = line.rstrip.split
-            fp_ribosome.puts [acc, 0, len, acc, 0, '+'].join("\t") if acc =~ /^RIBO_/
+            if acc =~ /^RIBO_/
+              fp_ribosome.puts [acc, 0, len, acc, 0, '+'].join("\t") 
+              fp_ribosome.puts [acc, 0, len, acc, 0, '-'].join("\t") 
+            end
             if acc =~ /^RNA_SPIKE_/
               fp_whole.puts [acc, 0, len, acc, 0, '+'].join("\t")
               fp_5end.puts [acc, 0, 50, acc, 0, '+'].join("\t")
