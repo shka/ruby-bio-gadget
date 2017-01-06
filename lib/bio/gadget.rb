@@ -60,6 +60,10 @@ module Bio
         "#{basename} #{@package_name.nil? ? '' : @package_name.to_s+' '}#{command.usage}"
       end
 
+      def buffer_size_option
+        options.key?(:buffer_size) ? ' --buffer-size='+options.buffer_size : ''
+      end
+
       def cat_command(options)
         "#{options.coreutils_prefix}cat"
       end
@@ -130,7 +134,7 @@ module Bio
       end
       
       def sort_command(options)
-        "#{options.coreutils_prefix}sort#{options.key?(:parallel) ? ' --parallel='+options.parallel.to_s : ''}#{options.key?(:buffer_size) ? ' --buffer-size='+options.buffer_size+' ' : ''} --compress-program=pigz"
+        "#{options.coreutils_prefix}sort#{buffer_size_option}#{options.key?(:parallel) ? ' --parallel='+options.parallel.to_s : ''} --compress-program=pigz"
       end
       
       def tee_command(options)

@@ -19,34 +19,39 @@ module Bio
 
       # strt:alignment
 
-      desc 'alignment INDEX FQGZDIR BAMDIR', 'Align reads to reference'
+      desc 'alignment INDEX FQGZDIR BAMDIR BEDDIR', 'Align reads to reference'
       long_desc <<-DESC
-Align STRT reads (*.fq.gz files at FQGZDIR) to a reference (INDEX/ref.*.ht2). The results will be at BAMDIR/*.bam.
+Align STRT reads (*.fq.gz files at FQGZDIR) to a reference (INDEX/ref.*.ht2). The alignments will be at BAMDIR/*.bam, and per-base 5'-end counts will be at BEDDIR/*.bed.gz.
 DESC
 
+      method_option *OPT_BUFFER_SIZE
+      method_option *OPT_COREUTILS_PREFIX
       method_option *OPT_PARALLEL
 
-      def alignment(index0, indir0, outdir0)
+      def alignment(index0, indir0, bamdir0, beddir0)
         
         index = File.expand_path(index0)
-        outdir = File.expand_path(outdir0)
+        bamdir = File.expand_path(bamdir0)
+        beddir = File.expand_path(beddir0)
         
         Dir.glob("#{File.expand_path(indir0)}/*.fq.gz").each do |fqgz|
           
           STDERR.puts "#{`date`.strip}: Align #{fqgz}..."
 
           tmpbam = get_temporary_path('strt.alignment', 'bam')
-          bam = "#{outdir}/#{File.basename(fqgz, '.fq.gz')}.bam"
+          base = File.basename(fqgz, '.fq.gz')
+          bam = "#{bamdir}/#{base}.bam"
           
           pipeline("hisat2 --rna-strandness F --dta-cufflinks -p #{options.parallel} -x #{index}/ref -U #{fqgz}",
                    "samtools view -S -b -@ #{options.parallel} - > #{tmpbam}")
           system "samtools sort -f -@ #{options.parallel} #{tmpbam} #{bam}" or exit $?.exitstatus
           system "samtools index #{bam}" or exit $?.exitstatus
-          
+          pipeline("strt count_per_base#{buffer_size_option}#{coreutils_prefix_option(options)}#{parallel_option(options)}#{bam}",
+                   "pigz -c > #{beddir}/#{base}.bed.gz")
         end
         
       end
-      
+
       # strt:build_index
 
       desc 'build_index DIR', 'Build index for alignment'
@@ -117,6 +122,28 @@ DESC
 
       end
 
+      # strt:count_per_base
+
+      desc 'count_per_base BAM',  'Count reads per base'
+      long_desc <<-DESC
+Count reads per base , based on an alignment BAM.
+DESC
+
+      method_option *OPT_BUFFER_SIZE
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_PARALLEL
+
+      def count_per_base(bam)
+
+        pipeline("samtools view -@ #{coreutils_prefix_option(options)} -b -q 1 #{bam}",
+                 "bedtools bamtobed -i stdin",
+                 "ruby -F'\t' -anle 'puts [$F[0], $F[5]==\"+\" ? $F[1] : $F[2].to_i-1, $F[5]==\"+\" ? $F[1].to_i+1 : $F[2], $F[5]].join(\"\t\")'",
+                 "#{sort_command(options)} -t '\t' -k 1,1 -k 2,2n",
+                 "#{uniq_command(options)} -c",
+                 "ruby -anle 'puts ($F[1..3]+[\"#{File.basename(bam, '.bam')}\", $F[0], $F[4]]).join(\"\t\")'")
+        
+      end
+      
       # strt:prepare_genome
 
       desc 'prepare_genome DIR', 'Prepare genome data'
@@ -386,7 +413,6 @@ DESC
   end
 end
 
-require 'bio/gadget/strt/bam2bed5p.rb'
 require 'bio/gadget/strt/count.rb'
 require 'bio/gadget/strt/depth.rb'
 require 'bio/gadget/strt/qcSmp.rb'
