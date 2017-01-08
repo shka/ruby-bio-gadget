@@ -135,7 +135,7 @@ DESC
 
       def check_samples(csv, refdir, seqdir, mapdir)
 
-        count_commands = ["#{cut_command(options)} -f 5",
+        count_commands = ["#{cut_command} -f 5",
                           "ruby -e 'n=0; while gets; n+=$_.to_i; end; puts n'"]
 
         samples = CSV.read(csv, {
@@ -238,7 +238,7 @@ DESC
         pipeline(
           "bedtools bamtobed -i #{bam}",
           "ruby -F'\t' -anle 'puts [$F[0], $F[5]==\"+\" ? $F[1] : $F[2].to_i-1, $F[5]==\"+\" ? $F[1].to_i+1 : $F[2], $F[5]].join(\"\t\")'",
-          "#{sort_command(options)} -t '\t' -k 1,1 -k 2,2n",
+          "#{sort_command} -t '\t' -k 1,1 -k 2,2n",
           "#{uniq_command(options)} -c",
           "ruby -anle 'puts ($F[1..3]+[\"#{File.basename(bam, '.bam')}\", $F[0], $F[4]]).join(\"\t\")'")
         
@@ -258,7 +258,7 @@ DESC
 
         pipeline(
           "bedtools intersect -nonamecheck -s -wa -wb -a #{count} -b #{([region0]+regions0).join(' ')}",
-          "#{cut_command(options)} -f 5,11",
+          "#{cut_command} -f 5,11",
           "ruby -F'\t' -e 'n2c={}; while gets; c,n=$_.strip.split /\\t/; n2c[n]=(n2c.key?(n) ? n2c[n] : 0)+c.to_i; end; puts \"name,count\"; n2c.each {|n,c| puts \"\#{n},\#{c}\"}'")
         
       end
@@ -399,14 +399,14 @@ DESC
           pipeline("unpigz -c #{tmpfqgzs.join(' ')}",
                    "#{fq1l_convert_command(options)}",
                    "#{fq1l_count_command(options)} #{csvs[0]}",
-                   "#{fq1l_sort_command(options)} --buffer-size=#{(options.maximum_memory/2).to_i}%",
+                   "#{fq1l_sort_command} --buffer-size=#{(options.maximum_memory/2).to_i}%",
                    "fq1l exclude_duplicate",
                    "#{fq1l_count_command(options)} #{csvs[1]}",
                    "fq1l trim_3end_quality",
                    "#{fq1l_count_command(options)} #{csvs[2]}",
                    "fq1l trim_3end_primer#{coreutils_prefix_option(options)}#{grep_prefix_option(options)}#{parallel_option(options)}",
                    "#{fq1l_count_command(options)} #{csvs[3]}",
-                   "#{fq1l_sort_command(options)} --buffer-size=#{(options.maximum_memory/2).to_i}%",
+                   "#{fq1l_sort_command} --buffer-size=#{(options.maximum_memory/2).to_i}%",
                    "fq1l exclude_degenerate",
                    "#{fq1l_count_command(options)} #{csvs[4]}",
                    "fq1l trim_5end --minimum-length=#{options.minimum_length} #{tso_pattern}+",

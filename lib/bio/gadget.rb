@@ -64,7 +64,7 @@ module Bio
         options.key?(:buffer_size) ? ' --buffer-size='+options.buffer_size : ''
       end
 
-      def cat_command(options)
+      def cat_command
         "#{options.coreutils_prefix}cat"
       end
 
@@ -72,7 +72,7 @@ module Bio
          options.key?(:coreutils_prefix) ? " --coreutils-prefix=#{options.coreutils_prefix}" : ''
       end
       
-      def cut_command(options)
+      def cut_command
         "#{options.coreutils_prefix}cut"
       end
 
@@ -133,7 +133,7 @@ module Bio
         end
       end
       
-      def sort_command(options)
+      def sort_command
         "#{options.coreutils_prefix}sort#{buffer_size_option}#{options.key?(:parallel) ? ' --parallel='+options.parallel.to_s : ''} --compress-program=pigz"
       end
 

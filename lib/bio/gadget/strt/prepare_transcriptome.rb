@@ -151,24 +151,23 @@ DESC
           fp_other_1st_exon.close
           fp_other_promoter.close
 
-          merge_bed_by_gene(options,
-                            "#{dir}/transcriptome.coding_5end.bed",
-                            "Coding5end",
+          merge_bed_by_gene("Coding5end",
                             "5UTR and the proximal upstream of protein coding genes based on GENCODE version #{options.gencode} for GRCh38/hg38",
+                            "#{dir}/transcriptome.coding_5end",
                             bed_coding_promoter, bed_coding_5utr)
-          merge_bed_by_gene(options,
-                            "#{dir}/transcriptome.coding_whole.bed",
-                            "CodingWhole",
+          merge_bed_by_gene("CodingWhole",
                             "Exon and the proximal upstream of protein coding genes based on GENCODE version #{options.gencode} for GRCh38/hg38",
+                            "#{dir}/transcriptome.coding_whole",
                             bed_coding_promoter, bed_coding_exon)
 
-          system "pigz #{dir}/*.bed" or exit $?.exitstatus
+          sh "pigz #{dir}/*.bed"
 
           genePred = "#{dir}/hg38_refGene.txt"
-          pipelin("unpigz -c #{gtf}",
-                  "#{grep_command} 'tag \"basic\"'",
-                  "gtfToGenePred -geneNameAsName2 -genePredExt stdin #{genePred}")
-          system "retrieve_seq_from_fasta.pl --format refGene --seqfile #{dir}/ref.fa --outfile #{dir}/hg38_refGeneMrna.fa #{genePred}" or exit $?.exitstatus
+          pipeline(
+            "unpigz -c #{gtf}",
+            "#{grep_command} 'tag \"basic\"'",
+            "gtfToGenePred -geneNameAsName2 -genePredExt stdin #{genePred}")
+          sh "retrieve_seq_from_fasta.pl --format refGene --seqfile #{dir}/ref.fa --outfile #{dir}/hg38_refGeneMrna.fa #{genePred}"
 
         end
         
@@ -180,38 +179,49 @@ DESC
           open("| bedtools sort -i stdin > #{bed}", 'w')
         end
 
-        def merge_bed_by_gene(options, outbed, tname, tdesc, *inbeds)
+        def merge_bed_by_gene(tname, tdesc, base, *inbeds)
           tmpbed = get_temporary_path('strt.prepare_transcriptome', 'bed')
+          annfp = open("#{base}.csv", 'w')
+          annfp.puts "id,accessions"
           Open3.pipeline_r(
-            "#{cat_command(options)} #{inbeds.join(' ')}",
-            "#{sort_command(options)} -t '|' -k 2") do |infp, inths|
-
-            pregacc = ''
+            "#{cat_command} #{inbeds.join(' ')}",
+            "ruby -anle 'as=$F[3].split /\\|/; puts ($F[0..2]+[as[0]]+$F[4..-1]+[as[1..-1].join(\"|\")]).join(\"\t\")'",
+            "#{sort_command} -k 4,4 -k 1,1 -k 2,2n") do |infp, inths|
+            presym = ''
+            gacc2taccs = Hash.new
             outfp = nil
             outths = nil
             infp.each do |line|
-              chr, left, right, name, *cols = line.rstrip.split /\t/
-              sym, gacc, tacc = name.split /\|/
-              if pregacc != gacc
+              chr, left, right, sym, tmp, str, accs = line.rstrip.split /\t/
+              gacc, tacc = accs.split /\|/
+              if presym != sym
                 unless outfp.nil?
                   outfp.close
-                  outths[1].join
+                  outths[-1].join
+                  accstr = (gacc2taccs.map {|k,v| "#{k}:#{v.join(';')}"}).join('|')
+                  annfp.puts "#{presym},#{accstr}"
+                  gacc2taccs = Hash.new
                 end
                 outfp, outths = Open3.pipeline_w(
                          "bedtools sort -i stdin",
                          "bedtools merge -s -c 4 -o distinct >> #{tmpbed}")
-                pregacc = gacc
+                presym = sym
               end
-              outfp.puts ([chr, left, right, "#{sym}|#{gacc}"]+cols).join("\t")
+              outfp.puts ([chr, left, right, sym, tmp, str]).join("\t")
+              gacc2taccs[gacc] = Array.new unless gacc2taccs.key?(gacc)
+              gacc2taccs[gacc] << tacc unless gacc2taccs[gacc].include?(tacc)
             end
             unless outfp.nil?
               outfp.close
-              outths[1].join
+              outths[-1].join
+              accstr = (gacc2taccs.map {|k,v| "#{k}:#{v.join(';')}"}).join('|')
+              annfp.puts "#{presym},#{accstr}"
             end
           end
-          system "echo 'track name=#{tname} description=\"#{tdesc}\" visibility=3 colorByStrand=\"38,139,210 203,75,22\"' > #{outbed}"
+          annfp.close
+          sh "echo 'track name=#{tname} description=\"#{tdesc}\" visibility=3 colorByStrand=\"38,139,210 203,75,22\"' > #{base}.bed"
           pipeline("ruby -anle 'puts ($F.values_at(0, 1, 2) + [$F[4], 0, $F[3]]).join(\"\t\")' < #{tmpbed}",
-                   "bedtools sort -i stdin >> #{outbed}")
+                   "bedtools sort -i stdin >> #{base}.bed")
         end
       end
       

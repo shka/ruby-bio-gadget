@@ -82,9 +82,9 @@ module Bio
         exit unless STDIN.wait
         if csv.nil?
           puts "length,reads"
-          pipeline("#{cut_command(options)} -f 2",
+          pipeline("#{cut_command} -f 2",
                    "ruby -nle 'puts $_.length'",
-                   "#{sort_command(options)} -n",
+                   "#{sort_command} -n",
                    "#{uniq_command(options)} -c",
                    "ruby -anle 'puts $F.reverse.join(\",\")'")
         else
@@ -227,9 +227,9 @@ module Bio
       def sort(*fq1ls)
         if fq1ls.size == 0
           exit unless STDIN.wait
-          exec "#{sort_command(options)} -t '\t' -r -k2,4"
+          exec "#{sort_command} -t '\t' -r -k2,4"
         else
-          exec "#{sort_command(options)} -t '\t' -r -k2,4 -m #{fq1ls.join(' ')}"
+          exec "#{sort_command} -t '\t' -r -k2,4 -m #{fq1ls.join(' ')}"
         end
       end
 
@@ -243,7 +243,7 @@ module Bio
       
       def sort_index
         exit unless STDIN.wait
-        exec "#{sort_command(options)} -k2"
+        exec "#{sort_command} -k2"
       end
 
       # fq1l:sum_counts
@@ -302,7 +302,7 @@ module Bio
             pipeline("#{tee_command(options)} #{fifo}",
                      "fq1l match_3end#{gPrefix} #{sequence} --invert-match")
           ensure
-            system "#{cat_command(options)} #{tmpfile}" unless options.key?(:trimmed)
+            system "#{cat_command} #{tmpfile}" unless options.key?(:trimmed)
           end
         ensure
           File.unlink(fifo) if File.exist?(fifo)
@@ -383,7 +383,7 @@ module Bio
             raise "Fail at process #{i}; #{stats[i]}; #{commands[i]}" 
           end
         end
-        system "#{cat_command(options)} #{tmpfiles.join(' ')}"
+        system "#{cat_command} #{tmpfiles.join(' ')}"
         unlink_files(tmpfiles)
         
       end
