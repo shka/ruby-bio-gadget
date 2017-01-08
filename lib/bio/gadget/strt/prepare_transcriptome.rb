@@ -66,7 +66,7 @@ DESC
           regex_exon_number = /exon_number (\d+)/
           Open3.pipeline_r(
             "unpigz -c #{gtf}",
-            "#{grep_command(options)} '\tstart_codon\t'") do |fp, threads|
+            "#{grep_command} '\tstart_codon\t'") do |fp, threads|
             fp.each do |line|
               cols = line.rstrip.split /\t/
               atgs[regex_transcript_id.match(cols[8]).to_a[1]] =
@@ -89,7 +89,7 @@ DESC
           fp_other_promoter = open_bed_w("#{dir}/transcriptome.other_promoter.bed")
           Open3.pipeline_r(
             "unpigz -c #{gtf}",
-            "#{grep_command(options)} -E '\t(exon|transcript)\t'") do |fp, threads|
+            "#{grep_command} -E '\t(exon|transcript)\t'") do |fp, threads|
             fp.each do |line|
               cols = line.rstrip.split /\t/
               ann = cols[8]
@@ -166,7 +166,7 @@ DESC
 
           genePred = "#{dir}/hg38_refGene.txt"
           pipelin("unpigz -c #{gtf}",
-                  "#{grep_command(options)} 'tag \"basic\"'",
+                  "#{grep_command} 'tag \"basic\"'",
                   "gtfToGenePred -geneNameAsName2 -genePredExt stdin #{genePred}")
           system "retrieve_seq_from_fasta.pl --format refGene --seqfile #{dir}/ref.fa --outfile #{dir}/hg38_refGeneMrna.fa #{genePred}" or exit $?.exitstatus
 

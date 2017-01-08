@@ -178,7 +178,7 @@ module Bio
       def match_3end(pattern)
         exit unless STDIN.wait
         # PCRE was faster than BRE and ERE in GNU grep 2.25
-        system "#{grep_command(options)}#{options.invert_match ? ' -v' : ''} -P -e '^[^\\t]+\\t[^\\t]*#{pattern}\\t'"
+        system "#{grep_command}#{options.invert_match ? ' -v' : ''} -P -e '^[^\\t]+\\t[^\\t]*#{pattern}\\t'"
         exit $?.to_i == 0 || $?.to_i == 1 ? 0 : $?.to_i
       end
       
@@ -192,7 +192,7 @@ module Bio
       def match_5end(pattern)
         exit unless STDIN.wait
         # PCRE was faster than BRE and ERE in GNU grep 2.25
-        system "#{grep_command(options)} #{options.invert_match ? '-v' : ''} -P -e '^[^\\t]+\\t#{pattern}'"
+        system "#{grep_command}#{options.invert_match ? ' -v' : ''} -P -e '^[^\\t]+\\t#{pattern}'"
         exit $?.to_i == 0 || $?.to_i == 1 ? 0 : $?.to_i
       end
 

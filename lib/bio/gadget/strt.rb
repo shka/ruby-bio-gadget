@@ -19,35 +19,35 @@ module Bio
 
       # strt:alignment
 
-      desc 'alignment INDEX FQGZDIR BAMDIR BEDDIR', 'Align reads to reference'
+      desc 'alignment REFDIR SEQDIR MAPDIR', 'Align reads to reference'
       long_desc <<-DESC
-Align STRT reads (*.fq.gz files at FQGZDIR) to a reference (INDEX/ref.*.ht2). The alignments will be at BAMDIR/*.bam, and per-base 5'-end counts will be at BEDDIR/*.bed.gz.
+Align STRT reads (*.fq.gz files at SEQDIR) to a reference (REFDIR/ref.*.ht2). The alignments will be at MAPDIR/*.bam, and per-base 5'-end counts will be at MAPDIR/*.bed.gz.
 DESC
 
       method_option *OPT_BUFFER_SIZE
       method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_GREP_PREFIX
       method_option *OPT_PARALLEL
 
-      def alignment(index0, indir0, bamdir0, beddir0)
+      def alignment(refdir, seqdir, mapdir)
         
-        index = File.expand_path(index0)
-        bamdir = File.expand_path(bamdir0)
-        beddir = File.expand_path(beddir0)
-        
-        Dir.glob("#{File.expand_path(indir0)}/*.fq.gz").each do |fqgz|
-          
-          STDERR.puts "#{`date`.strip}: Align #{fqgz}..."
-
-          tmpbam = get_temporary_path('strt.alignment', 'bam')
+        Dir.glob("#{File.expand_path(seqdir)}/*.fq.gz").each do |fqgz|
           base = File.basename(fqgz, '.fq.gz')
-          bam = "#{bamdir}/#{base}.bam"
-          
-          pipeline("hisat2 --rna-strandness F --dta-cufflinks -p #{options.parallel} -x #{index}/ref -U #{fqgz}",
-                   "samtools view -S -b -@ #{options.parallel} - > #{tmpbam}")
-          system "samtools sort -f -@ #{options.parallel} #{tmpbam} #{bam}" or exit $?.exitstatus
-          system "samtools index #{bam}" or exit $?.exitstatus
-          pipeline("strt count_per_base#{buffer_size_option}#{coreutils_prefix_option(options)}#{parallel_option(options)}#{bam}",
-                   "pigz -c > #{beddir}/#{base}.bed.gz")
+          STDERR.puts "#{`date`.strip}: Align #{base}..."
+          bam = "#{mapdir}/#{base}.bam"
+          pipeline(
+            "hisat2 --rna-strandness F --dta-cufflinks -p #{options.parallel} -x #{refdir}/ref -U #{fqgz}",
+            "#{grep_command} -v -E 'NH:i:([2-9][0-9]*|1[0-9]+)'",
+            "samtools sort -@ #{options.parallel} -o #{bam}")
+          sh "samtools index #{bam}"
+        end
+
+        STDERR.puts "#{`date`.strip}: Count from all alignments."
+        Parallel.map(Dir.glob("#{File.expand_path(mapdir)}/*.bam"),
+                     in_threads: options.parallel) do |bam|
+          pipeline(
+            "strt count_per_base#{buffer_size_option}#{coreutils_prefix_option(options)}#{parallel_option(options)} #{bam}",
+            "pigz -c > #{mapdir}/#{File.basename(bam, '.bam')}.bed.gz")
         end
         
       end
@@ -124,7 +124,7 @@ DESC
 
       # strt:check_samples
 
-      desc 'check_sampels CSV SEQDIR BAMDIR BEDDIR REFDIR', 'Check samples'
+      desc 'check_samples CSV SEQDIR BAMDIR BEDDIR REFDIR', 'Check samples'
 long_desc <<-DESC
 Check samples in a design CSV by counting.'
 DESC
@@ -176,12 +176,6 @@ DESC
                             *count_commands).to_i
         end
 
-        tmp = Array.new
-        samples.each do |row|
-          tmp << (row["MAPPED_READS"] - row["RIBOSOME_READS"] - row["SPIKEIN_READS"]) / row["SPIKEIN_READS"].to_f
-        end
-        samples["RELATIVE_POLYA_RNAS"] = tmp
-
         samples["SPIKEIN_5END_READS"] =
           Parallel.map(bases, in_threads: options.parallel) do |base|
           pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{beddir}/#{base}.bed.gz -b #{refdir}/spikein_5end.bed.gz",
@@ -193,6 +187,12 @@ DESC
           tmp << row["SPIKEIN_5END_READS"].to_f / row["SPIKEIN_READS"]
         end
         samples["SPIKEIN_5END_RATE"] = tmp
+
+        tmp = Array.new
+        samples.each do |row|
+          tmp << (row["MAPPED_READS"] - row["RIBOSOME_READS"] - row["SPIKEIN_READS"]) / row["SPIKEIN_5END_READS"].to_f
+        end
+        samples["RELATIVE_POLYA_RNAS"] = tmp
 
         samples["CODING_READS"] =
           Parallel.map(bases, in_threads: options.parallel) do |base|
@@ -214,7 +214,7 @@ DESC
 
         tmp = Array.new
         samples.each do |row|
-          tmp << row["CODING_5END_READS"].to_f / row["SPIKEIN_READS"]
+          tmp << row["CODING_5END_READS"].to_f / row["SPIKEIN_5END_READS"]
         end
         samples["RELATIVE_MRNAS"] = tmp
 
@@ -235,14 +235,31 @@ DESC
 
       def count_per_base(bam)
 
-        pipeline("samtools view -h #{bam}",
-                 "grep -v -E 'NH:i:([2-9][0-9]*|1[0-9]+)'",
-                 "samtools view -S -u -b -",
-                 "bedtools bamtobed -i stdin",
-                 "ruby -F'\t' -anle 'puts [$F[0], $F[5]==\"+\" ? $F[1] : $F[2].to_i-1, $F[5]==\"+\" ? $F[1].to_i+1 : $F[2], $F[5]].join(\"\t\")'",
-                 "#{sort_command(options)} -t '\t' -k 1,1 -k 2,2n",
-                 "#{uniq_command(options)} -c",
-                 "ruby -anle 'puts ($F[1..3]+[\"#{File.basename(bam, '.bam')}\", $F[0], $F[4]]).join(\"\t\")'")
+        pipeline(
+          "bedtools bamtobed -i #{bam}",
+          "ruby -F'\t' -anle 'puts [$F[0], $F[5]==\"+\" ? $F[1] : $F[2].to_i-1, $F[5]==\"+\" ? $F[1].to_i+1 : $F[2], $F[5]].join(\"\t\")'",
+          "#{sort_command(options)} -t '\t' -k 1,1 -k 2,2n",
+          "#{uniq_command(options)} -c",
+          "ruby -anle 'puts ($F[1..3]+[\"#{File.basename(bam, '.bam')}\", $F[0], $F[4]]).join(\"\t\")'")
+        
+      end
+
+      # strt:count_per_region
+
+      desc 'count_per_region COUNT REGION [REGION ...]',
+           'Count reads per region'
+      long_desc <<-DESC
+Count reads per region. Read counts, which are summerized by a BED-format COUNT, within regions, which are defined by a BED-format REGION, are summed by the region names.
+DESC
+      
+      method_option *OPT_COREUTILS_PREFIX
+
+      def count_per_region(count, region0, *regions0)
+
+        pipeline(
+          "bedtools intersect -nonamecheck -s -wa -wb -a #{count} -b #{([region0]+regions0).join(' ')}",
+          "#{cut_command(options)} -f 5,11",
+          "ruby -F'\t' -e 'n2c={}; while gets; c,n=$_.strip.split /\\t/; n2c[n]=(n2c.key?(n) ? n2c[n] : 0)+c.to_i; end; puts \"name,count\"; n2c.each {|n,c| puts \"\#{n},\#{c}\"}'")
         
       end
       

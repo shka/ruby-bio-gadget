@@ -110,7 +110,7 @@ module Bio
         fifo
       end
       
-      def grep_command(options)
+      def grep_command
         "#{options.grep_prefix}grep"
       end
 
@@ -135,6 +135,11 @@ module Bio
       
       def sort_command(options)
         "#{options.coreutils_prefix}sort#{buffer_size_option}#{options.key?(:parallel) ? ' --parallel='+options.parallel.to_s : ''} --compress-program=pigz"
+      end
+
+      def sh(cmd)
+        system cmd
+        raise "Fail at process #{$?.pid}; #{$?}; #{cmd}" unless $?.success?
       end
       
       def tee_command(options)
