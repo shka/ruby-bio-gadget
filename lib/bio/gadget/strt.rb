@@ -124,16 +124,16 @@ DESC
 
       # strt:check_samples
 
-      desc 'check_samples CSV SEQDIR BAMDIR BEDDIR REFDIR', 'Check samples'
+      desc 'check_samples CSV REFDIR SEQDIR MAPDIR', 'Check samples'
 long_desc <<-DESC
-Check samples in a design CSV by counting.'
+Check samples in a design CSV.'
 DESC
 
       method_option *OPT_BUFFER_SIZE
       method_option *OPT_COREUTILS_PREFIX
       method_option *OPT_PARALLEL
 
-      def check_samples(csv, seqdir, bamdir, beddir, refdir)
+      def check_samples(csv, refdir, seqdir, mapdir)
 
         count_commands = ["#{cut_command(options)} -f 5",
                           "ruby -e 'n=0; while gets; n+=$_.to_i; end; puts n'"]
@@ -154,7 +154,7 @@ DESC
 
         samples["MAPPED_READS"] =
           Parallel.map(bases, in_threads: options.parallel) do |base|
-          pipeline_readline("unpigz -c #{beddir}/#{base}.bed.gz",
+          pipeline_readline("unpigz -c #{mapdir}/#{base}.bed.gz",
                             *count_commands).to_i
         end
 
@@ -166,19 +166,19 @@ DESC
 
         samples["RIBOSOME_READS"] = 
           Parallel.map(bases, in_threads: options.parallel) do |base|
-          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{beddir}/#{base}.bed.gz -b #{refdir}/ribosome.bed.gz",
+          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{mapdir}/#{base}.bed.gz -b #{refdir}/ribosome.bed.gz",
                             *count_commands).to_i
         end
 
         samples["SPIKEIN_READS"] =
           Parallel.map(bases, in_threads: options.parallel) do |base|
-          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{beddir}/#{base}.bed.gz -b #{refdir}/spikein_whole.bed.gz",
+          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{mapdir}/#{base}.bed.gz -b #{refdir}/spikein_whole.bed.gz",
                             *count_commands).to_i
         end
 
         samples["SPIKEIN_5END_READS"] =
           Parallel.map(bases, in_threads: options.parallel) do |base|
-          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{beddir}/#{base}.bed.gz -b #{refdir}/spikein_5end.bed.gz",
+          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{mapdir}/#{base}.bed.gz -b #{refdir}/spikein_5end.bed.gz",
                             *count_commands).to_i
         end
 
@@ -196,13 +196,13 @@ DESC
 
         samples["CODING_READS"] =
           Parallel.map(bases, in_threads: options.parallel) do |base|
-          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{beddir}/#{base}.bed.gz -b #{refdir}/transcriptome.coding_whole.bed.gz",
+          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{mapdir}/#{base}.bed.gz -b #{refdir}/transcriptome.coding_whole.bed.gz",
                             *count_commands).to_i
         end
 
         samples["CODING_5END_READS"] =
           Parallel.map(bases, in_threads: options.parallel) do |base|
-          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{beddir}/#{base}.bed.gz -b #{refdir}/transcriptome.coding_5end.bed.gz",
+          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{mapdir}/#{base}.bed.gz -b #{refdir}/transcriptome.coding_5end.bed.gz",
                             *count_commands).to_i
         end
 
