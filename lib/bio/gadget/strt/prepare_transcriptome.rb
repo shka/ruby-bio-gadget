@@ -182,7 +182,7 @@ DESC
         def merge_bed_by_gene(tname, tdesc, base, *inbeds)
           tmpbed = get_temporary_path('strt.prepare_transcriptome', 'bed')
           annfp = open("#{base}.csv", 'w')
-          annfp.puts "id,accessions"
+          annfp.puts "ID,ACCESSIONS"
           Open3.pipeline_r(
             "#{cat_command} #{inbeds.join(' ')}",
             "ruby -anle 'as=$F[3].split /\\|/; puts ($F[0..2]+[as[0]]+$F[4..-1]+[as[1..-1].join(\"|\")]).join(\"\t\")'",

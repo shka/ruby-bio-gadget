@@ -68,7 +68,7 @@ module Bio
         "#{options.coreutils_prefix}cat"
       end
 
-      def coreutils_prefix_option(options)
+      def coreutils_prefix_option
          options.key?(:coreutils_prefix) ? " --coreutils-prefix=#{options.coreutils_prefix}" : ''
       end
       
@@ -85,15 +85,15 @@ module Bio
       end
       
       def fq1l_convert_command(options)
-        "fq1l convert#{coreutils_prefix_option(options)}"
+        "fq1l convert#{coreutils_prefix_option}"
       end
       
       def fq1l_count_command(options)
-        "fq1l count#{coreutils_prefix_option(options)}#{parallel_option(options)}"
+        "fq1l count#{coreutils_prefix_option}#{parallel_option(options)}"
       end
 
       def fq1l_sort_command(options)
-        "fq1l sort#{coreutils_prefix_option(options)}#{parallel_option(options)}"
+        "fq1l sort#{coreutils_prefix_option}#{parallel_option(options)}"
       end
 
       def get_temporary_path(prefix, suffix, cleanup=true)

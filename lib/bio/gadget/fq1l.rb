@@ -89,7 +89,7 @@ module Bio
                    "ruby -anle 'puts $F.reverse.join(\",\")'")
         else
           fifo = get_fifo('fq1l.count', 'fq1l')
-          pid = Kernel.spawn("fq1l count#{coreutils_prefix_option(options)} < #{fifo} > #{csv}")
+          pid = Kernel.spawn("fq1l count#{coreutils_prefix_option} < #{fifo} > #{csv}")
           system "#{tee_command(options)} #{fifo}"
           Process.waitpid(pid)
         end

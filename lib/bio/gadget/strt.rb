@@ -2,6 +2,7 @@ require 'csv'
 require 'fileutils'
 require 'open3'
 require 'parallel'
+require 'thread'
 
 require 'bio/gadget/strt/prepare_transcriptome.rb'
 
@@ -46,7 +47,7 @@ DESC
         Parallel.map(Dir.glob("#{File.expand_path(mapdir)}/*.bam"),
                      in_threads: options.parallel) do |bam|
           pipeline(
-            "strt count_per_base#{buffer_size_option}#{coreutils_prefix_option(options)}#{parallel_option(options)} #{bam}",
+            "strt count_per_base#{buffer_size_option}#{coreutils_prefix_option}#{parallel_option(options)} #{bam}",
             "pigz -c > #{mapdir}/#{File.basename(bam, '.bam')}.bed.gz")
         end
         
@@ -72,19 +73,19 @@ DESC
         STDERR.puts "#{`date`.strip}: Preparing data files..."
         
         Parallel.map(
-          ["strt prepare_genome#{coreutils_prefix_option(options)}#{genome_option(options)} #{dir}",
-           "strt prepare_variation#{coreutils_prefix_option(options)}#{genome_option(options)} --download=only #{dir}",
-           "strt prepare_transcriptome #{options.genome}#{coreutils_prefix_option(options)}#{grep_prefix_option(options)} --download=only #{dir}",
-           "strt prepare_spikein#{coreutils_prefix_option(options)} #{dir}",
-           "strt prepare_ribosome#{coreutils_prefix_option(options)}#{genome_option(options)} #{dir}"], in_threads: options.parallel) do |cmd|
+          ["strt prepare_genome#{coreutils_prefix_option}#{genome_option(options)} #{dir}",
+           "strt prepare_variation#{coreutils_prefix_option}#{genome_option(options)} --download=only #{dir}",
+           "strt prepare_transcriptome #{options.genome}#{coreutils_prefix_option}#{grep_prefix_option(options)} --download=only #{dir}",
+           "strt prepare_spikein#{coreutils_prefix_option} #{dir}",
+           "strt prepare_ribosome#{coreutils_prefix_option}#{genome_option(options)} #{dir}"], in_threads: options.parallel) do |cmd|
           system cmd or exit $?.exitstatus
         end
 
         system "unpigz -c #{dir}/genome.fa.gz #{dir}/spikein.fa.gz #{dir}/ribosome.fa.gz > #{dir}/ref.fa"
         system "samtools faidx #{dir}/ref.fa"
 
-        Parallel.map(["strt prepare_transcriptome #{options.genome}#{coreutils_prefix_option(options)}#{grep_prefix_option(options)} --download=no #{dir}",
-                      "strt prepare_variation#{coreutils_prefix_option(options)}#{genome_option(options)} --download=no #{dir}"], in_threads: options.parallel) do |cmd|
+        Parallel.map(["strt prepare_transcriptome #{options.genome}#{coreutils_prefix_option}#{grep_prefix_option(options)} --download=no #{dir}",
+                      "strt prepare_variation#{coreutils_prefix_option}#{genome_option(options)} --download=no #{dir}"], in_threads: options.parallel) do |cmd|
           STDERR.puts cmd
           system cmd or exit $?.exitstatus
         end
@@ -97,19 +98,19 @@ DESC
 
       # strt:call_allele
 
-      desc 'call_allele CSV BAMDIR REFDIR', 'Call allele frequency'
+      desc 'call_allele CSV REFDIR MAPDIR', 'Call allele frequency'
       long_desc <<-DESC
 Call allele frequencies of multiple samples specified in a design CSV, based on alignment files at BAMDIR, and reference sequence 'ref.fa' and the index at REFDIR.
 DESC
 
       method_option *OPT_GENOME
 
-      def call_allele(csv, bamdir, refdir)
+      def call_allele(csv, refdir, mapdir)
 
         design = CSV.table(csv)
         bams = get_temporary_path('strt.call_allele', 'bams')
         fp = open(bams, 'w')
-        design[:base].each {|bam| fp.puts "#{bamdir}/#{bam}.bam" }
+        design[:base].each {|bam| fp.puts "#{mapdir}/#{bam}.bam" }
         fp.close
         csvdir = File.dirname(csv)
         bcf = "#{csvdir}/strt-call_allele.bcf"
@@ -122,106 +123,6 @@ DESC
 
       end
 
-      # strt:check_samples
-
-      desc 'check_samples CSV REFDIR SEQDIR MAPDIR', 'Check samples'
-long_desc <<-DESC
-Check samples in a design CSV.'
-DESC
-
-      method_option *OPT_BUFFER_SIZE
-      method_option *OPT_COREUTILS_PREFIX
-      method_option *OPT_PARALLEL
-
-      def check_samples(csv, refdir, seqdir, mapdir)
-
-        count_commands = ["#{cut_command} -f 5",
-                          "ruby -e 'n=0; while gets; n+=$_.to_i; end; puts n'"]
-
-        samples = CSV.read(csv, {
-                             headers: true,
-                             converters: :numeric
-                           })
-        bases = samples["BASE"]
-
-        samples["TOTAL_READS"] =
-          Parallel.map(bases, in_threads: options.parallel) do |base|
-          stat = CSV.table("#{seqdir}/#{base}.count.step8.csv")
-          n = 0
-          stat[:reads].each {|i| n += i }
-          n
-        end
-
-        samples["MAPPED_READS"] =
-          Parallel.map(bases, in_threads: options.parallel) do |base|
-          pipeline_readline("unpigz -c #{mapdir}/#{base}.bed.gz",
-                            *count_commands).to_i
-        end
-
-        tmp = Array.new
-        samples.each do |row|
-          tmp << row["MAPPED_READS"].to_f / row["TOTAL_READS"]
-        end
-        samples["MAPPED_RATE"] = tmp
-
-        samples["RIBOSOME_READS"] = 
-          Parallel.map(bases, in_threads: options.parallel) do |base|
-          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{mapdir}/#{base}.bed.gz -b #{refdir}/ribosome.bed.gz",
-                            *count_commands).to_i
-        end
-
-        samples["SPIKEIN_READS"] =
-          Parallel.map(bases, in_threads: options.parallel) do |base|
-          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{mapdir}/#{base}.bed.gz -b #{refdir}/spikein_whole.bed.gz",
-                            *count_commands).to_i
-        end
-
-        samples["SPIKEIN_5END_READS"] =
-          Parallel.map(bases, in_threads: options.parallel) do |base|
-          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{mapdir}/#{base}.bed.gz -b #{refdir}/spikein_5end.bed.gz",
-                            *count_commands).to_i
-        end
-
-        tmp = Array.new
-        samples.each do |row|
-          tmp << row["SPIKEIN_5END_READS"].to_f / row["SPIKEIN_READS"]
-        end
-        samples["SPIKEIN_5END_RATE"] = tmp
-
-        tmp = Array.new
-        samples.each do |row|
-          tmp << (row["MAPPED_READS"] - row["RIBOSOME_READS"] - row["SPIKEIN_READS"]) / row["SPIKEIN_5END_READS"].to_f
-        end
-        samples["RELATIVE_POLYA_RNAS"] = tmp
-
-        samples["CODING_READS"] =
-          Parallel.map(bases, in_threads: options.parallel) do |base|
-          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{mapdir}/#{base}.bed.gz -b #{refdir}/transcriptome.coding_whole.bed.gz",
-                            *count_commands).to_i
-        end
-
-        samples["CODING_5END_READS"] =
-          Parallel.map(bases, in_threads: options.parallel) do |base|
-          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{mapdir}/#{base}.bed.gz -b #{refdir}/transcriptome.coding_5end.bed.gz",
-                            *count_commands).to_i
-        end
-
-        tmp = Array.new
-        samples.each do |row|
-          tmp << row["CODING_5END_READS"].to_f / row["CODING_READS"]
-        end
-        samples["CODING_5END_RATE"] = tmp
-
-        tmp = Array.new
-        samples.each do |row|
-          tmp << row["CODING_5END_READS"].to_f / row["SPIKEIN_5END_READS"]
-        end
-        samples["RELATIVE_MRNAS"] = tmp
-
-        puts samples
-
-      end
-      
       # strt:count_per_base
 
       desc 'count_per_base BAM',  'Count reads per base'
@@ -246,10 +147,10 @@ DESC
 
       # strt:count_per_region
 
-      desc 'count_per_region COUNT REGION [REGION ...]',
+      desc 'count_per_region COUNT REG [REG ...]',
            'Count reads per region'
       long_desc <<-DESC
-Count reads per region. Read counts, which are summerized by a BED-format COUNT, within regions, which are defined by a BED-format REGION, are summed by the region names.
+Count reads per region for a sample. Read counts (a BED-format COUNT) within regions (BED-format REGions) are summed by the region names.
 DESC
       
       method_option *OPT_COREUTILS_PREFIX
@@ -259,7 +160,7 @@ DESC
         pipeline(
           "bedtools intersect -nonamecheck -s -wa -wb -a #{count} -b #{([region0]+regions0).join(' ')}",
           "#{cut_command} -f 5,11",
-          "ruby -F'\t' -e 'n2c={}; while gets; c,n=$_.strip.split /\\t/; n2c[n]=(n2c.key?(n) ? n2c[n] : 0)+c.to_i; end; puts \"name,count\"; n2c.each {|n,c| puts \"\#{n},\#{c}\"}'")
+          "ruby -F'\t' -e 'n2c={}; while gets; c,n=$_.strip.split /\\t/; n2c[n]=(n2c.key?(n) ? n2c[n] : 0)+c.to_i; end; puts \"ID,COUNT\"; n2c.each {|n,c| puts \"\#{n},\#{c}\"}'")
         
       end
       
@@ -371,7 +272,7 @@ DESC
             "#{fq1l_count_command(options)} #{fqgz2csv1[fqgz]}",
             "fq1l annotate_index --first-cycle=#{options.umi_length+1} --last-cycle=#{options.umi_length+bcl}",
             "fq1l annotate_umi --first-cycle=1 --last-cycle=#{options.umi_length}",
-            "fq1l sort_index#{coreutils_prefix_option(options)}#{parallel_option(options)} --buffer-size=#{(options.maximum_memory/(fqgz2csv0.keys.size+1)).to_i}%",
+            "fq1l sort_index#{coreutils_prefix_option}#{parallel_option(options)} --buffer-size=#{(options.maximum_memory/(fqgz2csv0.keys.size+1)).to_i}%",
             "fq1l demultiplex #{fqgz2base[fqgz]} #{map}"
           ]
           cmds.insert(2, "#{head_command(options)} -n #{options.reads}") unless options.reads.nil?
@@ -404,14 +305,14 @@ DESC
                    "#{fq1l_count_command(options)} #{csvs[1]}",
                    "fq1l trim_3end_quality",
                    "#{fq1l_count_command(options)} #{csvs[2]}",
-                   "fq1l trim_3end_primer#{coreutils_prefix_option(options)}#{grep_prefix_option(options)}#{parallel_option(options)}",
+                   "fq1l trim_3end_primer#{coreutils_prefix_option}#{grep_prefix_option(options)}#{parallel_option(options)}",
                    "#{fq1l_count_command(options)} #{csvs[3]}",
                    "#{fq1l_sort_command} --buffer-size=#{(options.maximum_memory/2).to_i}%",
                    "fq1l exclude_degenerate",
                    "#{fq1l_count_command(options)} #{csvs[4]}",
                    "fq1l trim_5end --minimum-length=#{options.minimum_length} #{tso_pattern}+",
                    "#{fq1l_count_command(options)} #{csvs[5]}",
-                   "fq1l restore#{coreutils_prefix_option(options)}",
+                   "fq1l restore#{coreutils_prefix_option}",
                    "pigz -c > #{base}.#{well}.fq.gz")
           
           unlink_files(tmpfqgzs)
@@ -510,6 +411,166 @@ DESC
         
       end
 
+      # strt:qualify
+
+      desc 'qualify CSV REFDIR SEQDIR MAPDIR', 'Qualify samples'
+long_desc <<-DESC
+Qualify samples in a design CSV.'
+DESC
+
+      method_option *OPT_BUFFER_SIZE
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_PARALLEL
+
+      def qualify(csv, refdir, seqdir, mapdir)
+
+        count_commands = ["#{cut_command} -f 5",
+                          "ruby -e 'n=0; while gets; n+=$_.to_i; end; puts n'"]
+
+        samples = CSV.read(csv, {
+                             headers: true,
+                             converters: :numeric
+                           })
+        bases = samples["BASE"]
+
+        samples["TOTAL_READS"] =
+          Parallel.map(bases, in_threads: options.parallel) do |base|
+          stat = CSV.table("#{seqdir}/#{base}.count.step8.csv")
+          n = 0
+          stat[:reads].each {|i| n += i }
+          n
+        end
+
+        samples["MAPPED_READS"] =
+          Parallel.map(bases, in_threads: options.parallel) do |base|
+          pipeline_readline("unpigz -c #{mapdir}/#{base}.bed.gz",
+                            *count_commands).to_i
+        end
+
+        tmp = Array.new
+        samples.each do |row|
+          tmp << row["MAPPED_READS"].to_f / row["TOTAL_READS"]
+        end
+        samples["MAPPED_RATE"] = tmp
+
+        samples["RIBOSOME_READS"] = 
+          Parallel.map(bases, in_threads: options.parallel) do |base|
+          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{mapdir}/#{base}.bed.gz -b #{refdir}/ribosome.bed.gz",
+                            *count_commands).to_i
+        end
+
+        samples["SPIKEIN_READS"] =
+          Parallel.map(bases, in_threads: options.parallel) do |base|
+          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{mapdir}/#{base}.bed.gz -b #{refdir}/spikein_whole.bed.gz",
+                            *count_commands).to_i
+        end
+
+        samples["SPIKEIN_5END_READS"] =
+          Parallel.map(bases, in_threads: options.parallel) do |base|
+          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{mapdir}/#{base}.bed.gz -b #{refdir}/spikein_5end.bed.gz",
+                            *count_commands).to_i
+        end
+
+        tmp = Array.new
+        samples.each do |row|
+          tmp << row["SPIKEIN_5END_READS"].to_f / row["SPIKEIN_READS"]
+        end
+        samples["SPIKEIN_5END_RATE"] = tmp
+
+        tmp = Array.new
+        samples.each do |row|
+          tmp << (row["MAPPED_READS"] - row["RIBOSOME_READS"] - row["SPIKEIN_READS"]) / row["SPIKEIN_5END_READS"].to_f
+        end
+        samples["RELATIVE_POLYA_RNAS"] = tmp
+
+        samples["CODING_READS"] =
+          Parallel.map(bases, in_threads: options.parallel) do |base|
+          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{mapdir}/#{base}.bed.gz -b #{refdir}/transcriptome.coding_whole.bed.gz",
+                            *count_commands).to_i
+        end
+
+        samples["CODING_5END_READS"] =
+          Parallel.map(bases, in_threads: options.parallel) do |base|
+          pipeline_readline("bedtools intersect -nonamecheck -u -s -a #{mapdir}/#{base}.bed.gz -b #{refdir}/transcriptome.coding_5end.bed.gz",
+                            *count_commands).to_i
+        end
+
+        tmp = Array.new
+        samples.each do |row|
+          tmp << row["CODING_5END_READS"].to_f / row["CODING_READS"]
+        end
+        samples["CODING_5END_RATE"] = tmp
+
+        tmp = Array.new
+        samples.each do |row|
+          tmp << row["CODING_5END_READS"].to_f / row["SPIKEIN_5END_READS"]
+        end
+        samples["RELATIVE_MRNAS"] = tmp
+
+        puts samples
+
+      end
+      
+      # strt:quantitate
+
+      desc 'quantify CSV REFDIR MAPDIR REGBASE',
+           'Quantify samples'
+      long_desc <<-DESC
+Count reads per region for multiple samples in CSV. Read counts (a BED-format COUNT) within regions (REFDIR/ribosome.bed.gz, REFDIR/spikein_5end.bed.gz & REGBASE.bed.gz) are summed by the region names. Addional columns in REGBASE.csv is attached as annotations.
+DESC
+
+      method_option *OPT_COREUTILS_PREFIX
+      method_option *OPT_PARALLEL
+      
+      def quantify(csv, refdir, mapdir, regbase)
+
+        samples = CSV.read(csv, { headers: true, converters: :numeric })
+
+        tmp = CSV.read("#{regbase}.csv", { headers:true, converters: :numeric })
+        anns = tmp.headers; anns.delete('ID')
+        name2anns = Hash.new
+        tmp.each {|row| name2anns[row['ID']] = row.values_at(*anns)}
+
+        bases = samples["BASE"]
+        puts ( ['ID'] + anns +
+               bases.map {|base| "N|#{base}"} +
+               bases.map {|base| "R|#{base}"} ).join(',')
+
+        name2base2cnt = Hash.new
+        base2spike = Hash.new
+        @locker = Mutex.new
+        Parallel.map(samples["BASE"], in_threads: options.parallel) do |base|
+          base2spike[base] = 0.0
+          fp = open("| strt count_per_region#{coreutils_prefix_option} #{mapdir}/#{base}.bed.gz #{refdir}/ribosome.bed.gz #{refdir}/spikein_5end.bed.gz #{regbase}.bed.gz")
+          fp.gets
+          fp.each do |line|
+            name, cnt = line.strip.split /,/
+            @locker.synchronize do
+              if !name2base2cnt.key?(name)
+                name2base2cnt[name] = Hash.new
+                name2base2cnt[name][base] = Hash.new
+              elsif !name2base2cnt[name].key?(base)
+                name2base2cnt[name][base] = Hash.new
+              end
+              name2base2cnt[name][base] = cnt
+              base2spike[base] += cnt.to_f if name =~ /^RNA_SPIKE_/
+            end
+          end
+          fp.close
+        end
+        
+        name2base2cnt.each do |name, base2cnt|
+          puts ( [name] +
+                 (name2anns.key?(name) ?
+                    name2anns[name] : Array.new(anns.length, 'NA')) +
+                 bases.map {|base| base2cnt.key?(base) ?
+                              base2cnt[base].to_f/base2spike[base]*1000 : 0} +
+                 bases.map {|base| base2cnt.key?(base) ? base2cnt[base] : 0}
+               ).join(',')
+        end
+        
+      end
+      
       #
 
       no_commands do
