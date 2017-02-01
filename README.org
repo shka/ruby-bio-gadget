@@ -12,24 +12,3 @@ To check all commands and the usages in this package
 
 : bio-gadget help
 
-Currently available commands are
-
-- dedup :: Deduplicate fastq (via STDIN)
-- demlt :: Demultiplex fastq by barcodes
-- femrg :: Extract and merge first exons
-- fqxz :: (Re)compression of *.fq(.gz|.bz2) files
-- pead :: Find peak within each exon from wigs by a mojority vote.
-- qvstat :: Statistics of quality values in *.qual file
-- rgt2mtx :: Convert cuffdiff read group tracking file into tab-separated matrix
-- wig5p :: Convert bam-format alignments into wig-format table
-- wigchr :: Extract wiggle track on specified chromosome
-
-* Contributing
-
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. (optional) Install gems (`bundle`)
-4. Add your feature
-5. Commit your changes (`git commit -am 'Added some feature'`)
-6. Push to the branch (`git push origin my-new-feature`)
-7. Create new Pull Request
