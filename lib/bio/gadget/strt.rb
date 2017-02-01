@@ -37,7 +37,7 @@ DESC
           STDERR.puts "#{`date`.strip}: Align #{base}..."
           bam = "#{mapdir}/#{base}.bam"
           pipeline(
-            "hisat2 --rna-strandness F --dta-cufflinks -p #{options.parallel} -x #{refdir}/ref -U #{fqgz}",
+            "hisat2 --no-unal --rna-strandness F --dta-cufflinks -p #{options.parallel} -x #{refdir}/ref -U #{fqgz}",
             "#{grep_command} -v -E 'NH:i:([2-9][0-9]*|1[0-9]+)'",
             "samtools sort -@ #{options.parallel} -o #{bam}")
           sh "samtools index #{bam}"
